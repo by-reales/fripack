@@ -1,21 +1,23 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, TouchableOpacity, View, Text, StyleSheet, Modal, TextInput, ScrollView, Alert } from "react-native";
+import React from 'react';
+import { Animated, Dimensions, TouchableOpacity, View, Text, StyleSheet, Modal, TextInput, ScrollView, Alert, Linking } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Marker, Polyline } from 'react-native-maps';
 import { Ionicons } from "@expo/vector-icons";
 import axios from 'axios';
 import * as ExpoLocation from 'expo-location';
 import CustomMarker, { LocationKey, Location } from '../../assets/markers';
+import { useEffect, useRef, useState } from "react";
 
 const API_KEY = '01d1e2a2ab57d9ea74d3d44680b5d8d7';
 const { height, width } = Dimensions.get('window');
 
 // Datos de ubicaciones
 const locations: Record<LocationKey, Location> = {
-  H1: { latitude: 10.994316, longitude: -74.792363 },
-  H2: { latitude: 10.995100, longitude: -74.792288 },
-  H3: { latitude: 10.995105, longitude: -74.792355 },
-  H4: { latitude: 10.996687, longitude: -74.796749 },
+  H1: { latitude: 10.994262, longitude:-74.792331 },
+  H2: { latitude: 10.995134, longitude: -74.792289 },
+  H3: { latitude: 10.995129, longitude: -74.792534 },
+  H4: { latitude: 10.996640, longitude: -74.796771 },
   H6: { latitude: 10.995328, longitude: -74.796315 },
+  H7: { latitude: 10.995346, longitude: -74.791502 },
 };
 
 const sedeNames: Record<LocationKey, string> = {
@@ -23,15 +25,17 @@ const sedeNames: Record<LocationKey, string> = {
   H2: 'Sede 2',
   H3: 'Sede 3',
   H4: 'Sede Postgrados',
-  H6: 'Sede de Investigación',
+  H6: 'Sede 6 Eureka',
+  H7: 'Sede Admisiones',
 };
 
 const sedeAddresses: Record<LocationKey, string> = {
-  H1: 'Bloque H1, Campus Norte',
-  H2: 'Bloque H2, Campus Norte',
-  H3: 'Bloque H3, Campus Norte',
-  H4: 'Bloque H4, Campus Sur',
-  H6: 'Bloque H6, Campus Sur',
+  H1: 'Headquarter H1,',
+  H2: 'Headquarter H2',
+  H3: 'Headquarter H3',
+  H4: 'Headquarter H4',
+  H6: 'Headquarter H6',
+  H7: 'Headquarter H7',
 };
 
 // Mapa minimalista con estilo claro
@@ -72,7 +76,7 @@ const SedeItem = ({ sede, onSelect }: { sede: LocationKey, onSelect: (sede: Loca
         <Ionicons 
           name="location" 
           size={24} 
-          color="#1ABC9C" 
+          color="#2ecc71" 
         />
       </View>
       <View style={styles.sedeInfoContainer}>
@@ -172,204 +176,993 @@ export default function MapScreen() {
   useEffect(() => {
     if (originSede && destinationSede) {
       fetchTemperature(locations[originSede].latitude, locations[originSede].longitude);
-      let newRoute = [];
-
-      if (originSede === 'H1' && destinationSede === 'H3') {
-        newRoute = [
-          locations.H1,
-          { latitude: 10.994554, longitude: -74.792147 },
-          { latitude: 10.994723, longitude: -74.791980 },
-          locations.H3,
-        ];
-      } else if (originSede === 'H3' && destinationSede === 'H1') {
-        newRoute = [
-          locations.H3,
-          { latitude: 10.994723, longitude: -74.791980 },
-          { latitude: 10.994554, longitude: -74.792147 },
-          locations.H1,
-        ];
-      } else if (originSede === 'H1' && destinationSede === 'H6') {
-        newRoute = [
-          locations.H1,
-          { latitude: 10.993781, longitude: -74.792815 },
-          { latitude: 10.995538, longitude: -74.794655 },
-          { latitude: 10.995648, longitude: -74.795086 },
-          { latitude: 10.995228, longitude: -74.795794 },
-          locations.H6,
-        ];
-      } else if (originSede === 'H6' && destinationSede === 'H1') {
-        newRoute = [
-          locations.H6,
-          { latitude: 10.995228, longitude: -74.795794 },
-          { latitude: 10.995648, longitude: -74.795086 },
-          { latitude: 10.995538, longitude: -74.794655 },
-          { latitude: 10.993781, longitude: -74.792815 },
-          locations.H1,
-        ];
-      } else if (originSede === 'H1' && destinationSede === 'H4') {
-        newRoute = [
-          locations.H1,
-          { latitude: 10.993781, longitude: -74.792815 },
-          { latitude: 10.995538, longitude: -74.794655 },
-          { latitude: 10.995648, longitude: -74.795086 },
+      let newRoute: { latitude: number; longitude: number }[] = [];
+  
+      const now = new Date();
+      const currentHour = now.getHours();
+  
+      // Definir las rutas según el horario
+      if (currentHour >= 6 && currentHour < 13) {
+        // Rutas de 6:00 AM a 1:00 PM
+        if (originSede === 'H1' && destinationSede === 'H3') {
+          newRoute = [
+              locations.H1,
+              { latitude: 10.994417, longitude: -74.792333 },
+              { latitude: 10.994714, longitude: -74.792065 },
+              locations.H3,
+          ];
+        } else if (originSede === 'H3' && destinationSede === 'H1') {
+          newRoute = [
+              locations.H3,
+              { latitude: 10.994714, longitude: -74.792065 },
+              { latitude: 10.994417, longitude: -74.792333 },
+              locations.H1,
+          ];
+        } else if (originSede === 'H1' && destinationSede === 'H6') {
+          newRoute = [
+              locations.H1,
+              { latitude: 10.994417, longitude: -74.792333 },
+              { latitude: 10.994107, longitude: -74.792635 },
+              { latitude: 10.994184, longitude: -74.792726 },
+              { latitude: 10.994100, longitude: -74.792797 },
+              { latitude: 10.994014, longitude: -74.792941 },
+              { latitude: 10.995523, longitude: -74.794536 },
+              { latitude: 10.995482, longitude: -74.794618 },
+              { latitude: 10.995613, longitude: -74.795054 },
+              { latitude: 10.995684, longitude: -74.795164 },
+              { latitude: 10.995300, longitude: -74.795821 },
+              { latitude: 10.995537, longitude: -74.796272 },
+              locations.H6,
+          ];
+        } else if (originSede === 'H6' && destinationSede === 'H1') {
+          newRoute = [
+              locations.H6,
+              { latitude: 10.995537, longitude: -74.796272 },
+              { latitude: 10.995300, longitude: -74.795821 },
+              { latitude: 10.995684, longitude: -74.795164 },
+              { latitude: 10.995613, longitude: -74.795054 },
+              { latitude: 10.995482, longitude: -74.794618 },
+              { latitude: 10.995523, longitude: -74.794536 },
+              { latitude: 10.994014, longitude: -74.792941 },
+              { latitude: 10.994100, longitude: -74.792797 },
+              { latitude: 10.994184, longitude: -74.792726 },
+              { latitude: 10.994107, longitude: -74.792635 },
+              { latitude: 10.994417, longitude: -74.792333 },
+              locations.H1,
+          ];
+        } else if (originSede === 'H1' && destinationSede === 'H4') {
+          newRoute = [
+              locations.H1,
+              { latitude: 10.994417, longitude: -74.792333 },
+              { latitude: 10.994107, longitude: -74.792635 },
+              { latitude: 10.994184, longitude: -74.792726 },
+              { latitude: 10.994100, longitude: -74.792797 },
+              { latitude: 10.994014, longitude: -74.792941 },
+              { latitude: 10.995523, longitude: -74.794536 },
+              { latitude: 10.995482, longitude: -74.794618 },
+              { latitude: 10.995613, longitude: -74.795054 },
+              locations.H4,
+          ];
+        } else if (originSede === 'H4' && destinationSede === 'H1') {
+          newRoute = [
+              locations.H4,
+              { latitude: 10.995613, longitude: -74.795054 },
+              { latitude: 10.995482, longitude: -74.794618 },
+              { latitude: 10.995523, longitude: -74.794536 },
+              { latitude: 10.994014, longitude: -74.792941 },
+              { latitude: 10.994100, longitude: -74.792797 },
+              { latitude: 10.994184, longitude: -74.792726 },
+              { latitude: 10.994107, longitude: -74.792635 },
+              { latitude: 10.994417, longitude: -74.792333 },
+              locations.H1,
+          ];
+  
+        } else if (originSede === 'H1' && destinationSede === 'H2') {
+          newRoute = [
+              locations.H1,
+              { latitude: 10.994417, longitude: -74.792333 },
+              { latitude: 10.994714, longitude: -74.792065 },
+              { latitude: 10.995069, longitude: -74.792379 },
+              locations.H2,
+          ];
+        } else if (originSede === 'H2' && destinationSede === 'H1') {
+          newRoute = [
+              locations.H2,
+              { latitude: 10.995069, longitude: -74.792379 },
+              { latitude: 10.994714, longitude: -74.792065 },
+              { latitude: 10.994417, longitude: -74.792333 },
+              locations.H1,
+          ];
+        } else if (originSede === 'H2' && destinationSede === 'H4') {
+          newRoute = [
+            locations.H2,
+            { latitude: 10.995129, longitude: -74.792534 },
+            { latitude: 10.995629, longitude: -74.792918 },
+            { latitude: 10.994900, longitude: -74.793641 },
+            { latitude: 10.994810, longitude:-74.793729 },
+            { latitude: 10.995531, longitude:  -74.794467 },
+            { latitude: 10.995439, longitude: -74.794589 },
+            { latitude: 10.995583, longitude: -74.794835 },
+            { latitude: 10.995627, longitude: -74.795068 },
+            locations.H4,
+          ];
+        } else if (originSede === 'H4' && destinationSede === 'H2') {
+      newRoute = [
           locations.H4,
-        ];
-      } else if (originSede === 'H4' && destinationSede === 'H1') {
-        newRoute = [
-          locations.H4,
-          { latitude: 10.995648, longitude: -74.795086 },
-          { latitude: 10.995538, longitude: -74.794655 },
-          { latitude: 10.993781, longitude: -74.792815 },
-          locations.H1,
-        ];
-
-      } else if (originSede === 'H1' && destinationSede === 'H2') {
-        newRoute = [
-          locations.H1,
-          { latitude: 10.994316, longitude: -74.792363 },
-          { latitude: 10.994715, longitude: -74.792041 },
-          { latitude: 10.995042, longitude: -74.792362 },
-          { latitude: 10.995100, longitude: -74.792288 },
-          locations.H2,
-        ];
-      } else if (originSede === 'H2' && destinationSede === 'H1') {
-        newRoute = [
-          locations.H2,
-          { latitude: 10.995100, longitude: -74.792288 },
-          { latitude: 10.995042, longitude: -74.792362 },
-          { latitude: 10.994715, longitude: -74.792041 },
-          { latitude: 10.994316, longitude: -74.792363 },
-          locations.H1,
-        ];
-      } else if (originSede === 'H2' && destinationSede === 'H4') {
-        newRoute = [
-          locations.H2,
-          { latitude: 10.995100, longitude: -74.792288 },
-          { latitude: 10.995629, longitude: -74.792918 },
-          { latitude: 10.994900, longitude: -74.793641 },
-          { latitude: 10.995529, longitude: -74.794361 },
-          { latitude: 10.995439, longitude: -74.794589 },
-          { latitude: 10.995583, longitude: -74.794835 },
-          { latitude: 10.995627, longitude: -74.795068 },
-          { latitude: 10.996687, longitude: -74.796749 },
-          locations.H4,
-        ];
-      } else if (originSede === 'H4' && destinationSede === 'H2') {
-        newRoute = [
-          locations.H4,
-          { latitude: 10.996687, longitude: -74.796749 },
-          { latitude: 10.995627, longitude: -74.795068 },
-          { latitude: 10.995583, longitude: -74.794835 },
-          { latitude: 10.995439, longitude: -74.794589 },
-          { latitude: 10.995529, longitude: -74.794361 },
-          { latitude: 10.994900, longitude: -74.793641 },
-          { latitude: 10.995629, longitude: -74.792918 },
-          { latitude: 10.995100, longitude: -74.792288 },
-          locations.H2,
-        ];
-      
-      } else if (originSede === 'H2' && destinationSede === 'H6') {
-        newRoute = [
-          locations.H2,
-          { latitude: 10.995100, longitude: -74.792288 },
-          { latitude: 10.995629, longitude: -74.792918 },
-          { latitude: 10.994900, longitude: -74.793641 },
-          { latitude: 10.995529, longitude: -74.794361 },
-          { latitude: 10.995439, longitude: -74.794589 },
-          { latitude: 10.995583, longitude: -74.794835 },
-          { latitude: 10.995627, longitude: -74.795068 },
-          { latitude: 10.995183, longitude: -74.795849 },
-          { latitude: 10.995328, longitude: -74.796315 },
-          locations.H6,
-        ];
-      } else if (originSede === 'H6' && destinationSede === 'H2') {
-        newRoute = [
-          locations.H6,
-          { latitude: 10.995328, longitude: -74.796315 },
-          { latitude: 10.995183, longitude: -74.795849 },
           { latitude: 10.995627, longitude: -74.795068 },
           { latitude: 10.995583, longitude: -74.794835 },
           { latitude: 10.995439, longitude: -74.794589 },
-          { latitude: 10.995529, longitude: -74.794361 },
+          { latitude: 10.995531, longitude: -74.794467 },
+          { latitude: 10.994810, longitude: -74.793729 },
           { latitude: 10.994900, longitude: -74.793641 },
           { latitude: 10.995629, longitude: -74.792918 },
-          { latitude: 10.995100, longitude: -74.792288 },
+          { latitude: 10.995129, longitude: -74.792534 },
           locations.H2,
-        ];
-      
-      } else if (originSede === 'H3' && destinationSede === 'H4') {
-        newRoute = [
-          locations.H3,      
-          { latitude: 10.995629, longitude: -74.792918 },
-          { latitude: 10.994900, longitude: -74.793641 },
-          { latitude: 10.995529, longitude: -74.794361 },
-          { latitude: 10.995439, longitude: -74.794589 },
-          { latitude: 10.995583, longitude: -74.794835 },
-          { latitude: 10.995627, longitude: -74.795068 },
-          { latitude: 10.996687, longitude: -74.796749 },
-          locations.H4,
-        ];
-
-      } else if (originSede === 'H4' && destinationSede === 'H3') {
-        newRoute = [
-          locations.H4,
-          { latitude: 10.996687, longitude: -74.796749 },
-          { latitude: 10.995627, longitude: -74.795068 },
-          { latitude: 10.995583, longitude: -74.794835 },
-          { latitude: 10.995439, longitude: -74.794589 },
-          { latitude: 10.995529, longitude: -74.794361 },
-          { latitude: 10.994900, longitude: -74.793641 },
-          { latitude: 10.995629, longitude: -74.792918 },
-          locations.H3,
-        ];
+      ];
         
-      } else if (originSede === 'H4' && destinationSede === 'H6') {
-        newRoute = [
-          locations.H4,
-          { latitude: 10.995682, longitude: -74.795133 },
-          { latitude: 10.995234, longitude: -74.795902 },
-          locations.H6,
-        ];
-      
-      } else if (originSede === 'H6' && destinationSede === 'H4') {
-        newRoute = [
-          locations.H6,
-          { latitude: 10.995234, longitude: -74.795902 },
-          { latitude: 10.995682, longitude: -74.795133 },
-          locations.H4,
-        ];
-      } else if (originSede === 'H3' && destinationSede === 'H6') {
-        newRoute = [
-          locations.H3,
-          { latitude: 10.995629, longitude: -74.792918 },
-          { latitude: 10.994900, longitude: -74.793641 },
-          { latitude: 10.995529, longitude: -74.794361 },
-          { latitude: 10.995439, longitude: -74.794589 },
-          { latitude: 10.995583, longitude: -74.794835 },
-          { latitude: 10.995627, longitude: -74.795068 },
-          { latitude: 10.995183, longitude: -74.795849 },
-          { latitude: 10.995328, longitude: -74.796315 },
-          locations.H6,
-        ];
-      } else if (originSede === 'H6' && destinationSede === 'H3') {
-        newRoute = [
-          locations.H6,
-          { latitude: 10.995328, longitude: -74.796315 },
-          { latitude: 10.995183, longitude: -74.795849 },
-          { latitude: 10.995627, longitude: -74.795068 },
-          { latitude: 10.995583, longitude: -74.794835 },
-          { latitude: 10.995439, longitude: -74.794589 },
-          { latitude: 10.995529, longitude: -74.794361 },
-          { latitude: 10.994900, longitude: -74.793641 },
-          { latitude: 10.995629, longitude: -74.792918 },
-          locations.H3,
-        ];
+        } else if (originSede === 'H2' && destinationSede === 'H6') {
+          newRoute = [
+            locations.H2,    
+            { latitude: 10.995129, longitude: -74.792534 }, 
+            { latitude: 10.995629, longitude: -74.792918 },
+            { latitude: 10.994900, longitude: -74.793641 },
+            { latitude: 10.994810, longitude:-74.793729 },
+            { latitude: 10.995531, longitude:  -74.794467 },
+            { latitude: 10.995439, longitude: -74.794589 },
+            { latitude: 10.995583, longitude: -74.794835 },
+            { latitude: 10.995627, longitude: -74.795068 },
+            { latitude: 10.995681, longitude:-74.795196  },
+            { latitude: 10.995300, longitude: -74.795821 },
+            { latitude: 10.995537, longitude: -74.796272 },
+  
+            locations.H6,
+          ];
+        } else if (originSede === 'H6' && destinationSede === 'H2') {
+          newRoute = [
+              locations.H6,
+              { latitude: 10.995537, longitude: -74.796272 },
+              { latitude: 10.995300, longitude: -74.795821 },
+              { latitude: 10.995681, longitude: -74.795196 },
+              { latitude: 10.995627, longitude: -74.795068 },
+              { latitude: 10.995583, longitude: -74.794835 },
+              { latitude: 10.995439, longitude: -74.794589 },
+              { latitude: 10.995531, longitude: -74.794467 },
+              { latitude: 10.994810, longitude: -74.793729 },
+              { latitude: 10.994900, longitude: -74.793641 },
+              { latitude: 10.995629, longitude: -74.792918 },
+              { latitude: 10.995129, longitude: -74.792534 },
+              locations.H2,
+          ];
+        } else if (originSede === 'H7' && destinationSede === 'H6') {
+          newRoute = [
+            locations.H7,
+            { latitude: 10.994794, longitude: -74.792063},    
+            { latitude: 10.995129, longitude: -74.792534 }, 
+            { latitude: 10.995629, longitude: -74.792918 },
+            { latitude: 10.994900, longitude: -74.793641 },
+            { latitude: 10.994810, longitude:-74.793729 },
+            { latitude: 10.995531, longitude:  -74.794467 },
+            { latitude: 10.995439, longitude: -74.794589 },
+            { latitude: 10.995583, longitude: -74.794835 },
+            { latitude: 10.995627, longitude: -74.795068 },
+            { latitude: 10.995681, longitude:-74.795196  },
+            { latitude: 10.995300, longitude: -74.795821 },
+            { latitude: 10.995537, longitude: -74.796272 },
+  
+            locations.H6,
+          ];
+        } else if (originSede === 'H6' && destinationSede === 'H7') {
+          newRoute = [
+            locations.H6,
+            { latitude: 10.995537, longitude: -74.796272 },
+            { latitude: 10.995300, longitude: -74.795821 },
+            { latitude: 10.995681, longitude: -74.795196 },
+            { latitude: 10.995627, longitude: -74.795068 },
+            { latitude: 10.995583, longitude: -74.794835 },
+            { latitude: 10.995439, longitude: -74.794589 },
+            { latitude: 10.995531, longitude: -74.794467 },
+            { latitude: 10.994810, longitude: -74.793729 },
+            { latitude: 10.994900, longitude: -74.793641 },
+            { latitude: 10.995629, longitude: -74.792918 },
+            { latitude: 10.995129, longitude: -74.792534 },
+            { latitude: 10.994794, longitude: -74.792063 },    
+            locations.H7,
+          ];
+        } else if (originSede === 'H7' && destinationSede === 'H1') {
+          newRoute = [
+            locations.H7,
+            { latitude: 10.994283, longitude: -74.792419},     
+            locations.H1,
+          ];
+        } else if (originSede === 'H1' && destinationSede === 'H7') {
+          newRoute = [
+            locations.H1,
+            { latitude: 10.994283, longitude: -74.792419},     
+            locations.H7,
+          ];
+        } else if (originSede === 'H7' && destinationSede === 'H3') {
+          newRoute = [
+            locations.H7,
+            { latitude: 10.994794, longitude: -74.792063},     
+            locations.H3,
+          ];
+        } else if (originSede === 'H3' && destinationSede === 'H7') {
+          newRoute = [
+            locations.H3,
+            { latitude: 10.994794, longitude: -74.792063},     
+            locations.H7,
+          ];
+        } else if (originSede === 'H7' && destinationSede === 'H2') {
+          newRoute = [
+            locations.H7,
+            { latitude: 10.994854, longitude: -74.791991},     
+            locations.H2,
+          ];
+        } else if (originSede === 'H2' && destinationSede === 'H7') {
+          newRoute = [
+            locations.H2,
+            { latitude: 10.994854, longitude: -74.791991},     
+            locations.H7,
+          ];
+        } else if (originSede === 'H7' && destinationSede === 'H4') {
+          newRoute = [
+            locations.H7,
+            { latitude: 10.994794, longitude: -74.792063},
+            { latitude: 10.995129, longitude: -74.792534 },
+            { latitude: 10.995629, longitude: -74.792918 },
+            { latitude: 10.994900, longitude: -74.793641 },
+            { latitude: 10.994810, longitude:-74.793729 },
+            { latitude: 10.995531, longitude:  -74.794467 },
+            { latitude: 10.995439, longitude: -74.794589 },
+            { latitude: 10.995583, longitude: -74.794835 },
+            { latitude: 10.995627, longitude: -74.795068 },
+            locations.H4,
+          ];
+        
+        } else if (originSede === 'H3' && destinationSede === 'H4') {
+          newRoute = [
+            locations.H3,      
+            { latitude: 10.995629, longitude: -74.792918 },
+            { latitude: 10.994900, longitude: -74.793641 },         
+            { latitude: 10.994810, longitude:-74.793729 },
+            { latitude: 10.995531, longitude:  -74.794467 },
+            { latitude: 10.995444, longitude:-74.794625 }, 
+            { latitude: 10.995627, longitude: -74.795068 },
+            locations.H4,
+          ];
+  
+        } else if (originSede === 'H4' && destinationSede === 'H3') {
+          newRoute = [
+              locations.H4,
+              { latitude: 10.995627, longitude: -74.795068 },
+              { latitude: 10.995444, longitude: -74.794625 },
+              { latitude: 10.995531, longitude: -74.794467 },
+              { latitude: 10.994810, longitude: -74.793729 },
+              { latitude: 10.994900, longitude: -74.793641 },
+              { latitude: 10.995629, longitude: -74.792918 },
+              locations.H3,
+          ];
+        } else if (originSede === 'H4' && destinationSede === 'H6') {
+          newRoute = [
+            locations.H4,
+            { latitude: 10.995682, longitude: -74.795133 },
+            { latitude: 10.995308, longitude: -74.795826},
+            { latitude: 10.995516, longitude:-74.796250  },
+            locations.H6,
+          ];
+        
+        } else if (originSede === 'H6' && destinationSede === 'H4') {
+          newRoute = [
+              locations.H6,
+              { latitude: 10.995516, longitude: -74.796250 },
+              { latitude: 10.995308, longitude: -74.795826 },
+              { latitude: 10.995682, longitude: -74.795133 },
+              locations.H4,
+          ];
+        } else if (originSede === 'H3' && destinationSede === 'H6') {
+          newRoute = [
+            locations.H3,    
+            { latitude: 10.995629, longitude: -74.792918 },
+            { latitude: 10.994900, longitude: -74.793641 },               
+            { latitude: 10.994810, longitude:-74.793729 },    
+            { latitude: 10.995531, longitude:  -74.794467 },
+            { latitude: 10.995444, longitude:-74.794625},
+            { latitude: 10.995583, longitude: -74.794835 },
+            { latitude: 10.995627, longitude: -74.795068 },
+            { latitude: 10.995681, longitude:-74.795196  },
+            { latitude: 10.995300, longitude: -74.795821 },
+            { latitude: 10.995537, longitude: -74.796272 },
+            locations.H6,
+          ];
+        } else if (originSede === 'H6' && destinationSede === 'H3') {
+          newRoute = [
+              locations.H6,
+              { latitude: 10.995537, longitude: -74.796272 },
+              { latitude: 10.995300, longitude: -74.795821 },
+              { latitude: 10.995681, longitude: -74.795196 },
+              { latitude: 10.995627, longitude: -74.795068 },
+              { latitude: 10.995583, longitude: -74.794835 },
+              { latitude: 10.995444, longitude: -74.794625 },
+              { latitude: 10.995531, longitude: -74.794467 },
+              { latitude: 10.994810, longitude: -74.793729 },
+              { latitude: 10.994900, longitude: -74.793641 },
+              { latitude: 10.995629, longitude: -74.792918 },
+              locations.H3,
+          ];
+        }
+        
+      } else if (currentHour >= 13 && currentHour < 14) {
+        // Rutas de 1:00 PM a 2:00 PM
+        if (originSede === 'H1' && destinationSede === 'H3') {
+          newRoute = [
+            locations.H1,
+            { latitude: 10.994417, longitude: -74.792333 },
+            { latitude: 10.994714, longitude: -74.792065 },
+            locations.H3,
+          ];
+        } else if (originSede === 'H3' && destinationSede === 'H1') {
+          newRoute = [
+            locations.H3,
+            { latitude: 10.994714, longitude: -74.792065 },
+            { latitude: 10.994417, longitude: -74.792333 },
+            locations.H1,
+          ];
+        } else if (originSede === 'H7' && destinationSede === 'H1') {
+          newRoute = [
+            locations.H7,
+            { latitude: 10.994283, longitude: -74.792419},     
+            locations.H1,
+          ];
+        } else if (originSede === 'H1' && destinationSede === 'H7') {
+          newRoute = [
+            locations.H1,
+            { latitude: 10.994283, longitude: -74.792419},     
+            locations.H7,
+          ];
+        } else if (originSede === 'H7' && destinationSede === 'H3') {
+          newRoute = [
+            locations.H7,
+            { latitude: 10.994794, longitude: -74.792063},     
+            locations.H3,
+          ];
+        } else if (originSede === 'H3' && destinationSede === 'H7') {
+          newRoute = [
+            locations.H3,
+            { latitude: 10.994794, longitude: -74.792063},     
+            locations.H7,
+          ];
+        } else if (originSede === 'H7' && destinationSede === 'H2') {
+          newRoute = [
+            locations.H7,
+            { latitude: 10.994854, longitude: -74.791991},     
+            locations.H2,
+          ];
+        } else if (originSede === 'H2' && destinationSede === 'H7') {
+          newRoute = [
+            locations.H2,
+            { latitude: 10.994854, longitude: -74.791991},     
+            locations.H7,
+          ];
+        } else if (originSede === 'H1' && destinationSede === 'H2') {
+          newRoute = [
+              locations.H1,
+              { latitude: 10.994417, longitude: -74.792333 },
+              { latitude: 10.994714, longitude: -74.792065 },
+              { latitude: 10.995069, longitude: -74.792379 },
+              locations.H2,
+          ];
+        } else if (originSede === 'H2' && destinationSede === 'H1') {
+          newRoute = [
+              locations.H2,
+              { latitude: 10.995069, longitude: -74.792379 },
+              { latitude: 10.994714, longitude: -74.792065 },
+              { latitude: 10.994417, longitude: -74.792333 },
+              locations.H1,
+          ];
+        } else if (originSede === 'H1' && destinationSede === 'H6') {
+          newRoute = [
+              locations.H1,
+              { latitude: 10.994381, longitude: -74.792350 },
+              { latitude: 10.994108, longitude: -74.792638 },
+              { latitude: 10.994179, longitude: -74.792719 },
+              { latitude: 10.994100, longitude: -74.792807 },
+              { latitude: 10.995607, longitude: -74.794399 },
+              { latitude: 10.995480, longitude: -74.794600 },
+              { latitude: 10.995615, longitude: -74.794780 },
+              { latitude: 10.995562, longitude: -74.795032 },
+              { latitude: 10.995665, longitude: -74.795144 },
+              { latitude: 10.995278, longitude: -74.795805 },
+              { latitude: 10.995475, longitude: -74.796161 },
+              locations.H6,
+          ];
+  
+        } else if (originSede === 'H6' && destinationSede === 'H1') {
+          newRoute = [
+              locations.H6,
+              { latitude: 10.995475, longitude: -74.796161 },
+              { latitude: 10.995278, longitude: -74.795805 },
+              { latitude: 10.995665, longitude: -74.795144 },
+              { latitude: 10.995562, longitude: -74.795032 },
+              { latitude: 10.995615, longitude: -74.794780 },
+              { latitude: 10.995480, longitude: -74.794600 },
+              { latitude: 10.995607, longitude: -74.794399 },
+              { latitude: 10.994100, longitude: -74.792807 },
+              { latitude: 10.994179, longitude: -74.792719 },
+              { latitude: 10.994108, longitude: -74.792638 },
+              { latitude: 10.994381, longitude: -74.792350 },
+              locations.H1,
+          ];
+        } else if (originSede === 'H1' && destinationSede === 'H4') {
+          newRoute = [
+              locations.H1,
+              { latitude: 10.994381, longitude: -74.792350 },
+              { latitude: 10.994108, longitude: -74.792638 },
+              { latitude: 10.994179, longitude: -74.792719 },
+              { latitude: 10.994100, longitude: -74.792807 },
+              { latitude: 10.995607, longitude: -74.794399 },
+              { latitude: 10.995480, longitude: -74.794600 },
+              { latitude: 10.995615, longitude: -74.794780 },
+              { latitude: 10.995562, longitude: -74.795032 },
+              { latitude: 10.995665, longitude: -74.795144 },
+              locations.H4,
+          ];
+        } else if (originSede === 'H4' && destinationSede === 'H1') {
+          newRoute = [
+              locations.H4,
+              { latitude: 10.995665, longitude: -74.795144 },
+              { latitude: 10.995562, longitude: -74.795032 },
+              { latitude: 10.995615, longitude: -74.794780 },
+              { latitude: 10.995480, longitude: -74.794600 },
+              { latitude: 10.995607, longitude: -74.794399 },
+              { latitude: 10.994100, longitude: -74.792807 },
+              { latitude: 10.994179, longitude: -74.792719 },
+              { latitude: 10.994108, longitude: -74.792638 },
+              { latitude: 10.994381, longitude: -74.792350 },
+              locations.H1,
+          ];
+          
+        } else if (originSede === 'H4' && destinationSede === 'H6') {
+          newRoute = [
+            locations.H4,
+            { latitude: 10.995682, longitude: -74.795133 },
+            { latitude: 10.995308, longitude: -74.795826},
+            { latitude: 10.995516, longitude:-74.796250  },
+            locations.H6,
+          ];
+        
+        } else if (originSede === 'H6' && destinationSede === 'H4') {
+          newRoute = [
+              locations.H6,
+              { latitude: 10.995516, longitude: -74.796250 },
+              { latitude: 10.995308, longitude: -74.795826 },
+              { latitude: 10.995682, longitude: -74.795133 },
+              locations.H4,
+          ];
+        }  else if (originSede === 'H2' && destinationSede === 'H6') {
+            newRoute = [
+                locations.H2,
+                { latitude: 10.995129, longitude: -74.792534 },
+                { latitude: 10.995618, longitude: -74.792937 },
+                { latitude: 10.994914, longitude: -74.793654 },
+                { latitude: 10.995607, longitude: -74.794399 },
+                { latitude: 10.995480, longitude: -74.794600 },
+                { latitude: 10.995615, longitude: -74.794780 },
+                { latitude: 10.995562, longitude: -74.795032 },
+                { latitude: 10.995665, longitude: -74.795144 },
+                { latitude: 10.995278, longitude: -74.795805 },
+                { latitude: 10.995475, longitude: -74.796161 },
+                locations.H6,
+            ];
+          }  else if (originSede === 'H6' && destinationSede === 'H2') {
+            newRoute = [
+                locations.H6,
+                { latitude: 10.995475, longitude: -74.796161 },
+                { latitude: 10.995278, longitude: -74.795805 },
+                { latitude: 10.995665, longitude: -74.795144 },
+                { latitude: 10.995562, longitude: -74.795032 },
+                { latitude: 10.995615, longitude: -74.794780 },
+                { latitude: 10.995480, longitude: -74.794600 },
+                { latitude: 10.995607, longitude: -74.794399 },
+                { latitude: 10.994914, longitude: -74.793654 },
+                { latitude: 10.995618, longitude: -74.792937 },
+                { latitude: 10.995129, longitude: -74.792534 },
+                locations.H2,
+            ];
+          }  else if (originSede === 'H7' && destinationSede === 'H6') {
+            newRoute = [
+                locations.H7,
+                { latitude: 10.994794, longitude: -74.792063},
+                { latitude: 10.995129, longitude: -74.792534 },
+                { latitude: 10.995618, longitude: -74.792937 },
+                { latitude: 10.994914, longitude: -74.793654 },
+                { latitude: 10.995607, longitude: -74.794399 },
+                { latitude: 10.995480, longitude: -74.794600 },
+                { latitude: 10.995615, longitude: -74.794780 },
+                { latitude: 10.995562, longitude: -74.795032 },
+                { latitude: 10.995665, longitude: -74.795144 },
+                { latitude: 10.995278, longitude: -74.795805 },
+                { latitude: 10.995475, longitude: -74.796161 },
+                locations.H6,
+            ];
+          } else if (originSede === 'H6' && destinationSede === 'H7') {
+            newRoute = [
+                locations.H6,
+                { latitude: 10.995475, longitude: -74.796161 },
+                { latitude: 10.995278, longitude: -74.795805 },
+                { latitude: 10.995665, longitude: -74.795144 },
+                { latitude: 10.995562, longitude: -74.795032 },
+                { latitude: 10.995615, longitude: -74.794780 },
+                { latitude: 10.995480, longitude: -74.794600 },
+                { latitude: 10.995607, longitude: -74.794399 },
+                { latitude: 10.994914, longitude: -74.793654 },
+                { latitude: 10.995618, longitude: -74.792937 },
+                { latitude: 10.995129, longitude: -74.792534 },
+                { latitude: 10.994794, longitude: -74.792063 },
+                locations.H7,
+            ];
+
+          }  else if (originSede === 'H7' && destinationSede === 'H4') {
+            newRoute = [
+                locations.H7,
+                { latitude: 10.994794, longitude: -74.792063},
+                { latitude: 10.995129, longitude: -74.792534 },
+                { latitude: 10.995618, longitude: -74.792937 },
+                { latitude: 10.994914, longitude: -74.793654 },
+                { latitude: 10.995607, longitude: -74.794399 },
+                { latitude: 10.995480, longitude: -74.794600 },
+                { latitude: 10.995615, longitude: -74.794780 },
+                { latitude: 10.995562, longitude: -74.795032 },
+                { latitude: 10.995665, longitude: -74.795144 },
+                locations.H4,
+            ];
+          } else if (originSede === 'H4' && destinationSede === 'H7') {
+            newRoute = [
+                locations.H4,
+                { latitude: 10.995665, longitude: -74.795144 },
+                { latitude: 10.995562, longitude: -74.795032 },
+                { latitude: 10.995615, longitude: -74.794780 },
+                { latitude: 10.995480, longitude: -74.794600 },
+                { latitude: 10.995607, longitude: -74.794399 },
+                { latitude: 10.994914, longitude: -74.793654 },
+                { latitude: 10.995618, longitude: -74.792937 },
+                { latitude: 10.995129, longitude: -74.792534 },
+                { latitude: 10.994794, longitude: -74.792063 },
+                locations.H7,
+            ];
+
+          }  else if (originSede === 'H2' && destinationSede === 'H4') {
+            newRoute = [
+                locations.H2,
+                { latitude: 10.995129, longitude: -74.792534 },
+                { latitude: 10.995618, longitude: -74.792937 },
+                { latitude: 10.994914, longitude: -74.793654 },
+                { latitude: 10.995607, longitude: -74.794399 },
+                { latitude: 10.995480, longitude: -74.794600 },
+                { latitude: 10.995615, longitude: -74.794780 },
+                { latitude: 10.995562, longitude: -74.795032 },
+                { latitude: 10.995665, longitude: -74.795144 },
+                locations.H4,
+            ];
+          }  else if (originSede === 'H4' && destinationSede === 'H2') {
+              newRoute = [
+                  locations.H4,
+                  { latitude: 10.995665, longitude: -74.795144 },
+                  { latitude: 10.995562, longitude: -74.795032 },
+                  { latitude: 10.995615, longitude: -74.794780 },
+                  { latitude: 10.995480, longitude: -74.794600 },
+                  { latitude: 10.995607, longitude: -74.794399 },
+                  { latitude: 10.994914, longitude: -74.793654 },
+                  { latitude: 10.995618, longitude: -74.792937 },
+                  { latitude: 10.995129, longitude: -74.792534 },
+                  locations.H2,
+              ];
+            }  else if (originSede === 'H3' && destinationSede === 'H4') {
+              newRoute = [
+                  locations.H3,
+                  { latitude: 10.995618, longitude: -74.792937 },
+                  { latitude: 10.994914, longitude: -74.793654 },
+                  { latitude: 10.995607, longitude: -74.794399 },
+                  { latitude: 10.995480, longitude: -74.794600 },
+                  { latitude: 10.995615, longitude: -74.794780 },
+                  { latitude: 10.995562, longitude: -74.795032 },
+                  { latitude: 10.995665, longitude: -74.795144 },
+                  locations.H4,
+              ];
+            }  else if (originSede === 'H4' && destinationSede === 'H3') {
+              newRoute = [
+                  locations.H4,
+                  { latitude: 10.995665, longitude: -74.795144 },
+                  { latitude: 10.995562, longitude: -74.795032 },
+                  { latitude: 10.995615, longitude: -74.794780 },
+                  { latitude: 10.995480, longitude: -74.794600 },
+                  { latitude: 10.995607, longitude: -74.794399 },
+                  { latitude: 10.994914, longitude: -74.793654 },
+                  { latitude: 10.995618, longitude: -74.792937 },
+                  { latitude: 10.995129, longitude: -74.792534 },
+                  locations.H3,
+              ];
+            }  else if (originSede === 'H3' && destinationSede === 'H6') {
+              newRoute = [
+                  locations.H3,
+                  { latitude: 10.995618, longitude: -74.792937 },
+                  { latitude: 10.994914, longitude: -74.793654 },
+                  { latitude: 10.995607, longitude: -74.794399 },
+                  { latitude: 10.995480, longitude: -74.794600 },
+                  { latitude: 10.995615, longitude: -74.794780 },
+                  { latitude: 10.995562, longitude: -74.795032 },
+                  { latitude: 10.995665, longitude: -74.795144 },
+                  { latitude: 10.995278, longitude: -74.795805 },
+                  { latitude: 10.995475, longitude: -74.796161 },
+                  locations.H6,
+              ];
+            }  else if (originSede === 'H6' && destinationSede === 'H3') {
+              newRoute = [
+                  locations.H6,
+                  { latitude: 10.995475, longitude: -74.796161 },
+                  { latitude: 10.995278, longitude: -74.795805 },
+                  { latitude: 10.995665, longitude: -74.795144 },
+                  { latitude: 10.995562, longitude: -74.795032 },
+                  { latitude: 10.995615, longitude: -74.794780 },
+                  { latitude: 10.995480, longitude: -74.794600 },
+                  { latitude: 10.995607, longitude: -74.794399 },
+                  { latitude: 10.994914, longitude: -74.793654 },
+                  { latitude: 10.995618, longitude: -74.792937 },
+                  locations.H3,
+              ];
+        }
+       
       } else {
+        // Rutas de 2:00 PM a 6:00 AM
+        if (originSede === 'H1' && destinationSede === 'H3') {
+          newRoute = [
+            locations.H1,
+            { latitude: 10.994417, longitude: -74.792333 },
+            { latitude: 10.994714, longitude: -74.792065 },
+            locations.H3,
+          ];
+        } else if (originSede === 'H3' && destinationSede === 'H1') {
+          newRoute = [
+            locations.H3,
+            { latitude: 10.994714, longitude: -74.792065 },
+            { latitude: 10.994417, longitude: -74.792333 },
+            locations.H1,
+          ];
+        } else if (originSede === 'H7' && destinationSede === 'H1') {
+          newRoute = [
+            locations.H7,
+            { latitude: 10.994283, longitude: -74.792419},     
+            locations.H1,
+          ];
+        } else if (originSede === 'H1' && destinationSede === 'H7') {
+          newRoute = [
+            locations.H1,
+            { latitude: 10.994283, longitude: -74.792419},     
+            locations.H7,
+          ];
+        } else if (originSede === 'H7' && destinationSede === 'H3') {
+          newRoute = [
+            locations.H7,
+            { latitude: 10.994794, longitude: -74.792063},     
+            locations.H3,
+          ];
+        } else if (originSede === 'H3' && destinationSede === 'H7') {
+          newRoute = [
+            locations.H3,
+            { latitude: 10.994794, longitude: -74.792063},     
+            locations.H7,
+          ];
+        } else if (originSede === 'H7' && destinationSede === 'H2') {
+          newRoute = [
+            locations.H7,
+            { latitude: 10.994854, longitude: -74.791991},     
+            locations.H2,
+          ];
+        } else if (originSede === 'H2' && destinationSede === 'H7') {
+          newRoute = [
+            locations.H2,
+            { latitude: 10.994854, longitude: -74.791991},     
+            locations.H7,
+          ];
+        } else if (originSede === 'H1' && destinationSede === 'H6') {
+          newRoute = [
+            locations.H1,
+            { latitude: 10.993923, longitude: -74.792513 },
+            { latitude: 10.993815, longitude: -74.792458 },
+            { latitude: 10.993563, longitude: -74.792607 },
+            { latitude: 10.993605, longitude: -74.792722 },
+            { latitude: 10.993705, longitude: -74.792891 },
+            { latitude: 10.993842, longitude: -74.792883 },
+            { latitude: 10.995467, longitude: -74.794667 },
+            { latitude: 10.995609, longitude: -74.795053 },
+            { latitude: 10.995672, longitude: -74.795252 },
+            { latitude: 10.995319, longitude: -74.795831 },
+            { latitude: 10.995560, longitude: -74.796290 },
+            locations.H6,
+          ];
+        } else if (originSede === 'H6' && destinationSede === 'H1') {
+          newRoute = [
+            locations.H6,
+            { latitude: 10.995560, longitude: -74.796290 },
+            { latitude: 10.995319, longitude: -74.795831 },
+            { latitude: 10.995672, longitude: -74.795252 },
+            { latitude: 10.995609, longitude: -74.795053 },
+            { latitude: 10.995467, longitude: -74.794667 },
+            { latitude: 10.993842, longitude: -74.792883 },
+            { latitude: 10.993705, longitude: -74.792891 },
+            { latitude: 10.993605, longitude: -74.792722 },
+            { latitude: 10.993563, longitude: -74.792607 },
+            { latitude: 10.993815, longitude: -74.792458 },
+            { latitude: 10.993923, longitude: -74.792513 },
+            locations.H1,
+          ];
+        } else if (originSede === 'H1' && destinationSede === 'H4') {
+          newRoute = [
+            locations.H1,
+            { latitude: 10.993923, longitude: -74.792513 },
+            { latitude: 10.993815, longitude: -74.792458 },
+            { latitude: 10.993563, longitude: -74.792607 },
+            { latitude: 10.993605, longitude: -74.792722 },
+            { latitude: 10.993705, longitude: -74.792891 },
+            { latitude: 10.993842, longitude: -74.792883 },
+            { latitude: 10.995467, longitude: -74.794667 },
+            { latitude: 10.995609, longitude: -74.795053 },
+            { latitude: 10.995672, longitude: -74.795252 },
+            locations.H4,
+          ];
+        } else if (originSede === 'H4' && destinationSede === 'H1') {
+          newRoute = [
+            locations.H4,
+            { latitude: 10.995672, longitude: -74.795252 },
+            { latitude: 10.995609, longitude: -74.795053 },
+            { latitude: 10.995467, longitude: -74.794667 },
+            { latitude: 10.993842, longitude: -74.792883 },
+            { latitude: 10.993705, longitude: -74.792891 },
+            { latitude: 10.993605, longitude: -74.792722 },
+            { latitude: 10.993563, longitude: -74.792607 },
+            { latitude: 10.993815, longitude: -74.792458 },
+            { latitude: 10.993923, longitude: -74.792513 },
+            locations.H1,
+          ];
+        } else if (originSede === 'H1' && destinationSede === 'H2') {
+          newRoute = [
+              locations.H1,
+              { latitude: 10.994417, longitude: -74.792333 },
+              { latitude: 10.994714, longitude: -74.792065 },
+              { latitude: 10.995069, longitude: -74.792379 },
+              locations.H2,
+          ];
+        } else if (originSede === 'H2' && destinationSede === 'H4') {
+          newRoute = [
+              locations.H2,
+              { latitude: 10.995129, longitude: -74.792534 },
+              { latitude: 10.995609, longitude: -74.792920 },
+              { latitude: 10.994975, longitude: -74.793551},
+              { latitude: 10.994892, longitude: -74.793631},
+              { latitude: 10.995079, longitude: -74.793834},
+              { latitude: 10.994898, longitude: -74.794025},
+              { latitude: 10.995521, longitude: -74.794663},
+              { latitude: 10.995618, longitude: -74.794968},
+              { latitude: 10.995568, longitude: -74.795071},
+              { latitude: 10.995729, longitude: -74.795229},
+              locations.H4,
+          ];
+        }   else if (originSede === 'H4' && destinationSede === 'H2') {
+            newRoute = [
+              locations.H4,
+              { latitude: 10.995729, longitude: -74.795229 },
+              { latitude: 10.995568, longitude: -74.795071 },
+              { latitude: 10.995618, longitude: -74.794968 },
+              { latitude: 10.995521, longitude: -74.794663 },
+              { latitude: 10.994898, longitude: -74.794025 },
+              { latitude: 10.995079, longitude: -74.793834 },
+              { latitude: 10.994892, longitude: -74.793631 },
+              { latitude: 10.994975, longitude: -74.793551 },
+              { latitude: 10.995609, longitude: -74.792920 },
+              { latitude: 10.995129, longitude: -74.792534 },
+              locations.H2,
+            ];
+          } else if (originSede === 'H7' && destinationSede === 'H4') {
+            newRoute = [
+              locations.H7,
+              { latitude: 10.994794, longitude: -74.792063},    
+              { latitude: 10.995129, longitude: -74.792534 }, 
+              { latitude: 10.996427, longitude: -74.793666 },
+              { latitude: 10.996065, longitude: -74.794275 },
+              { latitude: 10.996151, longitude: -74.794361 },
+              { latitude: 10.996083, longitude: -74.794505 },
+              { latitude: 10.996167, longitude: -74.794539 },
+              { latitude: 10.996085, longitude: -74.794742 },
+              { latitude: 10.995915, longitude: -74.794812 },
+              { latitude: 10.995884, longitude: -74.794999 },
+              { latitude: 10.995709, longitude: -74.795123 },
+              { latitude: 10.996617, longitude: -74.796720 },
+              locations.H4,
+            ];
+          } else if (originSede === 'H4' && destinationSede === 'H7') {
+            newRoute = [
+              locations.H4,
+              { latitude: 10.996617, longitude: -74.796720 },
+              { latitude: 10.995709, longitude: -74.795123 },
+              { latitude: 10.995884, longitude: -74.794999 },
+              { latitude: 10.995915, longitude: -74.794812 },
+              { latitude: 10.996085, longitude: -74.794742 },
+              { latitude: 10.996167, longitude: -74.794539 },
+              { latitude: 10.996083, longitude: -74.794505 },
+              { latitude: 10.996151, longitude: -74.794361 },
+              { latitude: 10.996065, longitude: -74.794275 },
+              { latitude: 10.996427, longitude: -74.793666 },
+              { latitude: 10.995129, longitude: -74.792534 },
+              { latitude: 10.994794, longitude: -74.792063 },
+              locations.H7,
+            ];
+          } else if (originSede === 'H7' && destinationSede === 'H6') {
+            newRoute = [
+              locations.H7,
+              { latitude: 10.994794, longitude: -74.792063},    
+              { latitude: 10.995129, longitude: -74.792534 }, 
+              { latitude: 10.996427, longitude: -74.793666 },
+              { latitude: 10.996065, longitude: -74.794275 },
+              { latitude: 10.996151, longitude: -74.794361 },
+              { latitude: 10.996083, longitude: -74.794505 },
+              { latitude: 10.996167, longitude: -74.794539 },
+              { latitude: 10.996085, longitude: -74.794742 },
+              { latitude: 10.995915, longitude: -74.794812 },
+              { latitude: 10.995884, longitude: -74.794999 },
+              { latitude: 10.995709, longitude: -74.795123 },
+              { latitude: 10.995300, longitude: -74.795833 },
+              { latitude: 10.995469, longitude: -74.796160},
+              locations.H6,
+            ];
+          } else if (originSede === 'H6' && destinationSede === 'H7') {
+            newRoute = [
+              locations.H6,
+              { latitude: 10.995469, longitude: -74.796160 },
+              { latitude: 10.995300, longitude: -74.795833 },
+              { latitude: 10.995709, longitude: -74.795123 },
+              { latitude: 10.995884, longitude: -74.794999 },
+              { latitude: 10.995915, longitude: -74.794812 },
+              { latitude: 10.996085, longitude: -74.794742 },
+              { latitude: 10.996167, longitude: -74.794539 },
+              { latitude: 10.996083, longitude: -74.794505 },
+              { latitude: 10.996151, longitude: -74.794361 },
+              { latitude: 10.996065, longitude: -74.794275 },
+              { latitude: 10.996427, longitude: -74.793666 },
+              { latitude: 10.995129, longitude: -74.792534 },
+              { latitude: 10.994794, longitude: -74.792063 },
+              locations.H7,
+            ];
+
+
+          } else if (originSede === 'H2' && destinationSede === 'H6') {
+            newRoute = [
+                locations.H2,
+                { latitude: 10.995129, longitude: -74.792534 },
+                { latitude: 10.995609, longitude: -74.792920 },
+                { latitude: 10.994975, longitude: -74.793551},
+                { latitude: 10.994892, longitude: -74.793631},
+                { latitude: 10.995079, longitude: -74.793834},
+                { latitude: 10.994898, longitude: -74.794025},
+                { latitude: 10.995521, longitude: -74.794663},
+                { latitude: 10.995618, longitude: -74.794968},
+                { latitude: 10.995568, longitude: -74.795071},
+                { latitude: 10.995729, longitude: -74.795229},
+                { latitude: 10.995295, longitude: -74.795802},
+                { latitude: 10.995527, longitude: -74.796239},
+                locations.H6,
+            ];
+          } else if (originSede === 'H6' && destinationSede === 'H2') {
+            newRoute = [
+              locations.H6,
+              { latitude: 10.995527, longitude: -74.796239 },
+              { latitude: 10.995295, longitude: -74.795802 },
+              { latitude: 10.995729, longitude: -74.795229 },
+              { latitude: 10.995568, longitude: -74.795071 },
+              { latitude: 10.995618, longitude: -74.794968 },
+              { latitude: 10.995521, longitude: -74.794663 },
+              { latitude: 10.994898, longitude: -74.794025 },
+              { latitude: 10.995079, longitude: -74.793834 },
+              { latitude: 10.994892, longitude: -74.793631 },
+              { latitude: 10.994975, longitude: -74.793551 },
+              { latitude: 10.995609, longitude: -74.792920 },
+              { latitude: 10.995129, longitude: -74.792534 },
+              locations.H2,
+            ];
+          } else if (originSede === 'H3' && destinationSede === 'H4') {
+            newRoute = [
+                locations.H3,
+                { latitude: 10.995609, longitude: -74.792920 },
+                { latitude: 10.994975, longitude: -74.793551},
+                { latitude: 10.994892, longitude: -74.793631},
+                { latitude: 10.995079, longitude: -74.793834},
+                { latitude: 10.994898, longitude: -74.794025},
+                { latitude: 10.995521, longitude: -74.794663},
+                { latitude: 10.995618, longitude: -74.794968},
+                { latitude: 10.995568, longitude: -74.795071},
+                { latitude: 10.995729, longitude: -74.795229},
+                locations.H4,
+            ];
+          } else if (originSede === 'H4' && destinationSede === 'H3') {
+            newRoute = [
+              locations.H4,
+              { latitude: 10.995729, longitude: -74.795229 },
+              { latitude: 10.995568, longitude: -74.795071 },
+              { latitude: 10.995618, longitude: -74.794968 },
+              { latitude: 10.995521, longitude: -74.794663 },
+              { latitude: 10.994898, longitude: -74.794025 },
+              { latitude: 10.995079, longitude: -74.793834 },
+              { latitude: 10.994892, longitude: -74.793631 },
+              { latitude: 10.994975, longitude: -74.793551 },
+              { latitude: 10.995609, longitude: -74.792920 },
+              locations.H3,
+            ];
+          } else if (originSede === 'H3' && destinationSede === 'H6') {
+            newRoute = [
+                locations.H3,
+                { latitude: 10.995609, longitude: -74.792920 },
+                { latitude: 10.994975, longitude: -74.793551},
+                { latitude: 10.994892, longitude: -74.793631},
+                { latitude: 10.995079, longitude: -74.793834},
+                { latitude: 10.994898, longitude: -74.794025},
+                { latitude: 10.995521, longitude: -74.794663},
+                { latitude: 10.995618, longitude: -74.794968},
+                { latitude: 10.995568, longitude: -74.795071},
+                { latitude: 10.995729, longitude: -74.795229},
+                { latitude: 10.995295, longitude: -74.795802},
+                { latitude: 10.995527, longitude: -74.796239},
+                locations.H6,
+            ];
+          }  else if (originSede === 'H6' && destinationSede === 'H3') {
+              newRoute = [
+                  locations.H6,
+                  { latitude: 10.995527, longitude: -74.796239 },
+                  { latitude: 10.995295, longitude: -74.795802 },
+                  { latitude: 10.995729, longitude: -74.795229 },
+                  { latitude: 10.995568, longitude: -74.795071 },
+                  { latitude: 10.995618, longitude: -74.794968 },
+                  { latitude: 10.995521, longitude: -74.794663 },
+                  { latitude: 10.994898, longitude: -74.794025 },
+                  { latitude: 10.995079, longitude: -74.793834 },
+                  { latitude: 10.994892, longitude: -74.793631 },
+                  { latitude: 10.994975, longitude: -74.793551 },
+                  { latitude: 10.995609, longitude: -74.792920 },
+                  locations.H3,
+              ];
+        } else if (originSede === 'H2' && destinationSede === 'H1') {
+          newRoute = [
+              locations.H2,
+              { latitude: 10.995069, longitude: -74.792379 },
+              { latitude: 10.994714, longitude: -74.792065 },
+              { latitude: 10.994417, longitude: -74.792333 },
+              locations.H1,
+          ];
+        } else if (originSede === 'H4' && destinationSede === 'H6') {
+          newRoute = [
+            locations.H4,
+            { latitude: 10.995682, longitude: -74.795133 },
+            { latitude: 10.995308, longitude: -74.795826},
+            { latitude: 10.995516, longitude:-74.796250  },
+            locations.H6,
+          ];
+        
+        } else if (originSede === 'H6' && destinationSede === 'H4') {
+          newRoute = [
+              locations.H6,
+              { latitude: 10.995516, longitude: -74.796250 },
+              { latitude: 10.995308, longitude: -74.795826 },
+              { latitude: 10.995682, longitude: -74.795133 },
+              locations.H4,
+          ];
+        }
+      }
+  
+      // Si no se encontró una ruta específica para el horario, usar la ruta predeterminada
+      if (newRoute.length === 0) {
         newRoute = [locations[originSede], locations[destinationSede]];
       }
+  
       setRoute(newRoute);
       animateRoute(newRoute);
-      
+  
       if (mapRef.current && newRoute.length > 0) {
         setTimeout(() => {
           mapRef.current?.fitToCoordinates(newRoute, {
@@ -378,7 +1171,7 @@ export default function MapScreen() {
           });
         }, 500);
       }
-      
+  
       toggleRouteDetails(true);
     } else {
       setRoute([]);
@@ -513,6 +1306,16 @@ export default function MapScreen() {
     return (distance * 1000).toFixed(0);
   };
 
+  // Función para abrir Google Maps con la ruta predefinida
+  const openGoogleMaps = () => {
+    if (!originSede || !destinationSede || route.length === 0) return;
+
+    const waypoints = route.slice(1, -1).map(point => `${point.latitude},${point.longitude}`).join('/');
+    const url = `https://www.google.com/maps/dir/${locations[originSede].latitude},${locations[originSede].longitude}/${waypoints}/${locations[destinationSede].latitude},${locations[destinationSede].longitude}`;
+
+    Linking.openURL(url).catch(err => console.error("No se pudo abrir Google Maps", err));
+  };
+
   return (
     <View style={styles.container}>
       <MapView
@@ -565,7 +1368,7 @@ export default function MapScreen() {
         {animatedRoute.length > 0 && (
           <Polyline
             coordinates={animatedRoute}
-            strokeColor="#1ABC9C"
+            strokeColor="#2ecc71"
             strokeWidth={4}
             lineDashPattern={[0]}
           />
@@ -579,7 +1382,7 @@ export default function MapScreen() {
         <Ionicons 
           name="locate" 
           size={22} 
-          color="#1ABC9C" 
+          color="#2ecc71" 
         />
       </TouchableOpacity>
 
@@ -590,7 +1393,7 @@ export default function MapScreen() {
         <Ionicons 
           name={mapType === 'standard' ? 'map' : 'map-outline'} 
           size={22} 
-          color="#1ABC9C" 
+          color="#2ecc71" 
         />
       </TouchableOpacity>
 
@@ -602,21 +1405,21 @@ export default function MapScreen() {
             style={styles.locationSelector} 
             onPress={() => openSedeSelector('origin')}
           >
-            <Ionicons name="location" size={18} color="#1ABC9C" />
+            <Ionicons name="location" size={18} color="#2ecc71" />
             <Text style={styles.locationText}>
               {originSede ? sedeNames[originSede] : 'Seleccionar origen'}
             </Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.swapButton} onPress={swapLocations}>
-            <Ionicons name="swap-vertical" size={20} color="#1ABC9C" />
+            <Ionicons name="swap-vertical" size={20} color="#2ecc71" />
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.locationSelector} 
             onPress={() => openSedeSelector('destination')}
           >
-            <Ionicons name="flag" size={18} color="#1ABC9C" />
+            <Ionicons name="flag" size={18} color="#2ecc71" />
             <Text style={styles.locationText}>
               {destinationSede ? sedeNames[destinationSede] : 'Seleccionar destino'}
             </Text>
@@ -626,17 +1429,17 @@ export default function MapScreen() {
         <Animated.View style={[styles.routeDetails, { opacity: detailsOpacity }]}>
           <View style={styles.routeInfo}>
             <View style={styles.infoItem}>
-              <Ionicons name="walk-outline" size={18} color="#1ABC9C" />
+              <Ionicons name="walk-outline" size={18} color="#2ecc71" />
               <Text style={styles.infoText}>{calculateDistance() ? `${calculateDistance()} m` : '--'}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Ionicons name="time-outline" size={18} color="#1ABC9C" />
+              <Ionicons name="time-outline" size={18} color="#2ecc71" />
               <Text style={styles.infoText}>
                 {calculateDistance() ? `${Math.ceil(parseInt(calculateDistance() || '0') / 85)} min` : '--'}
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Ionicons name={getWeatherIcon()} size={18} color="#1ABC9C" />
+              <Ionicons name={getWeatherIcon()} size={18} color="#2ecc71" />
               <Text style={styles.infoText}>
                 {temperature ? `${temperature.toFixed(1)}°C` : '--'}
               </Text>
@@ -646,7 +1449,7 @@ export default function MapScreen() {
           <View style={styles.actionButtons}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.primaryButton]}
-              onPress={() => {}}
+              onPress={openGoogleMaps}
               disabled={!originSede || !destinationSede}
             >
               <Ionicons name="navigate" size={20} color="#FFF" />
@@ -669,7 +1472,7 @@ export default function MapScreen() {
                 Seleccionar {selectionType === 'origin' ? 'origen' : 'destino'}
               </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#1ABC9C" />
+                <Ionicons name="close" size={24} color="#2ecc71" />
               </TouchableOpacity>
             </View>
             
@@ -825,7 +1628,7 @@ const styles = StyleSheet.create({
     margin: 5,
   },
   primaryButton: {
-    backgroundColor: '#1ABC9C',
+    backgroundColor: '#2ecc71',
   },
   buttonText: {
     marginLeft: 8,

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { Ionicons } from "@expo/vector-icons";
 
-export type LocationKey = 'H1' | 'H2' | 'H3' | 'H4' | 'H6';
+export type LocationKey = 'H1' | 'H2' | 'H3' | 'H4' | 'H6' | 'H7';
 export type Location = { latitude: number; longitude: number };
 
 interface CustomMarkerProps {
@@ -37,7 +37,7 @@ const CustomMarker: React.FC<CustomMarkerProps> = ({
         <Ionicons 
           name="location" 
           size={18} 
-          color={isSelected ? "#1ABC9C" : "#2980B9"} 
+          color={isSelected ? "#2ecc71" : "#1abc9c"} 
         />
       </View>
       {isSelected && (
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   selectedMarker: {
-    borderColor: '#1ABC9C',
+    borderColor: '#2ecc71',
     borderWidth: 2,
   },
   labelContainer: {

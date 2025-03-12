@@ -13,11 +13,13 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "config": {
-        "googleMapsApiKey": "TU_API_KEY_AQUI"
+        "googleMapsApiKey": "AIzaSyBfXiE6MbfNMqsP9wd8aZAj1Jm13ElPgPw"
       }
     },
     "android": {
@@ -39,22 +41,25 @@
         }
       }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Permite a esta app usar tu ubicación para mostrarte tu posición en el mapa."
-        }
-      ]
-    ],
     "extra": {
       "eas": {
         "projectId": "da9ebeea-b20e-4e52-8281-6db6efe7c893"
       }
-    },
-    "owner": "by2"
-  }
+    }
+  },
+  "plugins": [
+    [
+      "expo-location",
+      {
+        "locationAlwaysAndWhenInUsePermission": "Permite a esta app usar tu ubicación para mostrarte tu posición en el mapa."
+      }
+    ],
+    "expo-router"
+  ],
+  "extra": {
+    "eas": {
+      "projectId": "da9ebeea-b20e-4e52-8281-6db6efe7c893"
+    }
+  },
+  "owner": "by2"
 }
