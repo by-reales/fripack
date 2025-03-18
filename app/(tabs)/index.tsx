@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { Animated, Dimensions, TouchableOpacity, View, Text, StyleSheet, Modal, TextInput, ScrollView, Alert, Linking, Pressable, FlatList } from "react-native";
+import { Animated, Dimensions, TouchableOpacity, View, Text, StyleSheet, Modal, TextInput, ScrollView, Alert, Linking, Pressable, FlatList,  PanResponder } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Marker, Polyline } from 'react-native-maps';
 import { Ionicons } from "@expo/vector-icons";
 import axios from 'axios';
@@ -20,7 +20,7 @@ const AnimatedTouchableItem: React.FC<AnimatedTouchableItemProps> = ({ children,
 
   const handlePressIn = () => {
     Animated.spring(scale, {
-      toValue: 1.5, // Escala ligeramente el elemento hacia adentro
+      toValue: 1.1, // Escala ligeramente el elemento hacia adentro
       useNativeDriver: true,
       speed: 50,
       bounciness: 30, // Añade rebote
@@ -163,6 +163,45 @@ export default function MapScreen() {
   const [feelsLike, setFeelsLike] = useState<number | null>(null); 
   const [uvIndex, setUvIndex] = useState<number | null>(null); 
   const [selectedGridItem, setSelectedGridItem] = useState<{row: number; col: number} | null>(null);
+  const currentHeightRef = useRef(140);
+
+  useEffect(() => {
+    const listenerId = panelHeight.addListener(({ value }) => {
+      currentHeightRef.current = value;
+    });
+    return () => panelHeight.removeListener(listenerId);
+  }, []);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (e, gestureState) => {
+        const newHeight = currentHeightRef.current - gestureState.dy;
+        const clampedHeight = Math.max(0, Math.min(350, newHeight));
+        panelHeight.setValue(clampedHeight);
+      },
+      onPanResponderRelease: (e, gestureState) => {
+        const currentHeight = currentHeightRef.current;
+        const velocity = gestureState.vy;
+  
+        let targetHeight;
+        if (velocity > 0.5) { 
+          targetHeight = 0;
+        } else if (velocity < -0.5) { 
+          targetHeight = 350;
+        } else {
+          targetHeight = currentHeight > (350 + 10) / 2 ? 350 : 0;
+        }
+  
+        Animated.spring(panelHeight, {
+          toValue: targetHeight,
+          useNativeDriver: false,
+          speed: 50,
+          bounciness: 0,
+        }).start();
+      },
+    })
+  ).current;
 
   const fetchUVIndex = async (lat: number, lon: number) => {
     try {
@@ -1265,7 +1304,7 @@ export default function MapScreen() {
     setRouteDetails(show);
     Animated.parallel([
       Animated.timing(panelHeight, {
-        toValue: show ? 350 : 140,
+        toValue: show ? 350 : 127,
         duration: 300,
         useNativeDriver: false,
       }),
@@ -1520,7 +1559,9 @@ export default function MapScreen() {
       
 
       <Animated.View style={[styles.panel, { height: panelHeight }]}>
-        <View style={styles.panelHandle} />
+      <View style={styles.panelHandle} {...panResponder.panHandlers}>
+  <View style={styles.panelHandleBar} />
+</View>
         
         <View style={styles.routeSelectors}>
           <TouchableOpacity 
@@ -1701,13 +1742,9 @@ const styles = StyleSheet.create({
     zIndex: 10, 
   },
   panelHandle: {
-    width: 20,
-    height: 5,
-    backgroundColor: '#E0E0E0',
-    alignSelf: 'center',
-    marginTop: 0,
-    marginBottom: 2,
-    borderRadius: 2,
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 5,
   },
   
   routeSelectors: {
@@ -1775,6 +1812,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 0,
     width: '100%', // Asegura que la fila ocupe todo el ancho disponible
+    overflow: 'visible', // Añadido
   },
   infoItem: {
     flexDirection: 'row',
@@ -1795,7 +1833,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 0,
     position: 'relative',
-    overflow: 'hidden',
+    overflow: 'visible', // Cambiado de 'hidden'
     aspectRatio: 1,
 
   },
@@ -1928,28 +1966,27 @@ const styles = StyleSheet.create({
   infoCardContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: '120%',
-    height: '100%', // Ocupa todo el espacio del contenedor padre
+    width: '125%',
+    height: '130%', // Ocupa todo el espacio del contenedor padre
   },
   selectedCard: {
     backgroundColor: '#e8f5e9',
-    borderRadius: 14,  // Aumentar el radio de borde // Hacer el borde más grueso
+    borderRadius: 8,  // Aumentar el radio de borde // Hacer el borde más grueso
     borderColor: '#2ecc71',
-    padding: 0,       // Aumentar el espacio interno
+    padding: 0,     // Aumentar el espacio interno
     // Añadir sombra para mayor profundidad
     shadowColor: '#2ecc71',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 3,
+    zIndex: 999, // Añadido para superposición
   },
-  leftCard: {
-    alignSelf: 'flex-start', // Alinea a la izquierda
+
+  panelHandleBar: {
+    width: 50,
+    height: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
   },
-  centerCard: {
-    alignSelf: 'center', // Alinea al centro
-  },
-rightCard: {
-  alignSelf: 'flex-end', // Alinea a la derecha
-},
 });
