@@ -1,5 +1,5 @@
-import React from 'react';
-import { Animated, Dimensions, TouchableOpacity, View, Text, StyleSheet, Modal, TextInput, ScrollView, Alert, Linking } from "react-native";
+import React, { ReactNode } from 'react';
+import { Animated, Dimensions, TouchableOpacity, View, Text, StyleSheet, Modal, TextInput, ScrollView, Alert, Linking, Pressable, FlatList } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Marker, Polyline } from 'react-native-maps';
 import { Ionicons } from "@expo/vector-icons";
 import axios from 'axios';
@@ -10,7 +10,45 @@ import { useEffect, useRef, useState } from "react";
 const API_KEY = '01d1e2a2ab57d9ea74d3d44680b5d8d7';
 const { height, width } = Dimensions.get('window');
 
-// Datos de ubicaciones
+interface AnimatedTouchableItemProps {
+  children: React.ReactNode;
+  onPress: () => void;
+}
+
+const AnimatedTouchableItem: React.FC<AnimatedTouchableItemProps> = ({ children, onPress }) => {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 1.5, // Escala ligeramente el elemento hacia adentro
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 30, // Añade rebote
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1, // Vuelve a la escala normal
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 10, // Añade rebote
+    }).start();
+  };
+
+  return (
+    <TouchableOpacity
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <Animated.View style={[styles.infoCard, { transform: [{ scale }] }]}>
+        {children}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
 const locations: Record<LocationKey, Location> = {
   H1: { latitude: 10.994262, longitude:-74.792331 },
   H2: { latitude: 10.995134, longitude: -74.792289 },
@@ -26,11 +64,11 @@ const sedeNames: Record<LocationKey, string> = {
   H3: 'Sede 3',
   H4: 'Sede Postgrados',
   H6: 'Sede 6 Eureka',
-  H7: 'Sede Admisiones',
+  H7: 'Casa Blanca',
 };
 
 const sedeAddresses: Record<LocationKey, string> = {
-  H1: 'Headquarter H1,',
+  H1: 'Headquarter H1',
   H2: 'Headquarter H2',
   H3: 'Headquarter H3',
   H4: 'Headquarter H4',
@@ -47,16 +85,16 @@ const mapStyle = [
   },
   {
     "featureType": "poi",
-    "stylers": [{ "visibility": "off" }]
+    "stylers": [{ "visibility": "on" }]
   },
   {
     "featureType": "road",
     "elementType": "labels.icon",
-    "stylers": [{ "visibility": "off" }]
+    "stylers": [{ "visibility": "on" }]
   },
   {
     "featureType": "transit",
-    "stylers": [{ "visibility": "off" }]
+    "stylers": [{ "visibility": "on" }]
   },
   {
     "featureType": "water",
@@ -109,6 +147,7 @@ export default function MapScreen() {
   const [route, setRoute] = useState<Location[]>([]);
   const [animatedRoute, setAnimatedRoute] = useState<Location[]>([]);
   const [temperature, setTemperature] = useState<number | null>(null);
+  const [humidity, setHumidity] = useState<number | null>(null); // <- Añadir esto
   const [weather, setWeather] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -121,6 +160,32 @@ export default function MapScreen() {
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
   const [mapType, setMapType] = useState<'standard' | 'satellite'>('standard');
+  const [feelsLike, setFeelsLike] = useState<number | null>(null); 
+  const [uvIndex, setUvIndex] = useState<number | null>(null); 
+  const [selectedGridItem, setSelectedGridItem] = useState<{row: number; col: number} | null>(null);
+
+  const fetchUVIndex = async (lat: number, lon: number) => {
+    try {
+      const response = await axios.get(
+        `https://api.weatherapi.com/v1/current.json?key=1eb5ae58653e491cbeb192832251203&q=${lat},${lon}`
+      );
+      setUvIndex(response.data.current.uv); // Extrae el índice UV
+    } catch (error) {
+      console.error('Error obteniendo el índice UV', error);
+    }
+  };
+
+
+  const getUVDescription = (uvIndex: number | null): string => {
+    if (uvIndex === null) return '--';
+    if (uvIndex <= 2) return 'Bajo';
+    if (uvIndex <= 5) return 'Moderado';
+    if (uvIndex <= 7) return 'Alto';
+    if (uvIndex <= 10) return 'Muy alto';
+    return 'Extremo';
+  };
+
+
 
   // Solicitar permisos de ubicación al cargar el componente
   useEffect(() => {
@@ -172,16 +237,18 @@ export default function MapScreen() {
       }, 500);
     }
   };
+  
 
   useEffect(() => {
     if (originSede && destinationSede) {
       fetchTemperature(locations[originSede].latitude, locations[originSede].longitude);
+      fetchUVIndex(locations[originSede].latitude, locations[originSede].longitude);
       let newRoute: { latitude: number; longitude: number }[] = [];
   
       const now = new Date();
       const currentHour = now.getHours();
   
-      // Definir las rutas según el horario
+
       if (currentHour >= 6 && currentHour < 13) {
         // Rutas de 6:00 AM a 1:00 PM
         if (originSede === 'H1' && destinationSede === 'H3') {
@@ -418,6 +485,20 @@ export default function MapScreen() {
             { latitude: 10.995627, longitude: -74.795068 },
             locations.H4,
           ];
+        } else if (originSede === 'H4' && destinationSede === 'H7') {
+          newRoute = [
+            locations.H4,
+            { latitude: 10.995627, longitude: -74.795068 },
+            { latitude: 10.995583, longitude: -74.794835 },
+            { latitude: 10.995439, longitude: -74.794589 },
+            { latitude: 10.995531, longitude: -74.794467 },
+            { latitude: 10.994810, longitude: -74.793729 },
+            { latitude: 10.994900, longitude: -74.793641 },
+            { latitude: 10.995629, longitude: -74.792918 },
+            { latitude: 10.995129, longitude: -74.792534 },
+            { latitude: 10.994794, longitude: -74.792063 },
+            locations.H7,
+          ];        
         
         } else if (originSede === 'H3' && destinationSede === 'H4') {
           newRoute = [
@@ -1184,7 +1265,7 @@ export default function MapScreen() {
     setRouteDetails(show);
     Animated.parallel([
       Animated.timing(panelHeight, {
-        toValue: show ? 200 : 140,
+        toValue: show ? 350 : 140,
         duration: 300,
         useNativeDriver: false,
       }),
@@ -1204,6 +1285,8 @@ export default function MapScreen() {
       );
       setTemperature(response.data.main.temp);
       setWeather(response.data.weather[0].main);
+      setHumidity(response.data.main.humidity);
+      setFeelsLike(response.data.main.feels_like); // <- Añadir esto
     } catch (error) {
       console.error('Error obteniendo la temperatura', error);
     } finally {
@@ -1315,6 +1398,43 @@ export default function MapScreen() {
 
     Linking.openURL(url).catch(err => console.error("No se pudo abrir Google Maps", err));
   };
+  const gridData = [
+    [
+      {
+        icon: 'walk-outline',
+        value: calculateDistance() ? `${calculateDistance()} m` : '--',
+        label: 'Distancia'
+      },
+      {
+        icon: 'time-outline',
+        value: calculateDistance() ? `${Math.round(Number(calculateDistance()) / 85)} min` : '--',
+        label: 'Tiempo estimado'
+      },
+      {
+        icon: getWeatherIcon(),
+        value: temperature ? `${temperature.toFixed(1)}°C` : '--',
+        label: 'Temperatura'
+      }
+    ],
+    [
+      {
+        icon: 'water-outline',
+        value: humidity ? `${humidity}%` : '--',
+        label: 'Humedad'
+      },
+      {
+        icon: 'thermometer-outline',
+        value: feelsLike ? `${feelsLike.toFixed(1)}°C` : '--',
+        label: 'Sensación térmica'
+      },
+      {
+        icon: 'sunny-outline',
+        value: uvIndex !== null ? `UV: ${uvIndex}` : 'UV: --',
+        label: uvIndex !== null ? ` ${getUVDescription(uvIndex)}` : 'Índice UV', // Aquí se añade "UV" antes de la descripción
+        
+      }
+    ]
+  ];
 
   return (
     <View style={styles.container}>
@@ -1396,6 +1516,8 @@ export default function MapScreen() {
           color="#2ecc71" 
         />
       </TouchableOpacity>
+      
+      
 
       <Animated.View style={[styles.panel, { height: panelHeight }]}>
         <View style={styles.panelHandle} />
@@ -1407,7 +1529,7 @@ export default function MapScreen() {
           >
             <Ionicons name="location" size={18} color="#2ecc71" />
             <Text style={styles.locationText}>
-              {originSede ? sedeNames[originSede] : 'Seleccionar origen'}
+              {originSede ? sedeNames[originSede] : 'Origen'}
             </Text>
           </TouchableOpacity>
           
@@ -1421,42 +1543,58 @@ export default function MapScreen() {
           >
             <Ionicons name="flag" size={18} color="#2ecc71" />
             <Text style={styles.locationText}>
-              {destinationSede ? sedeNames[destinationSede] : 'Seleccionar destino'}
+              {destinationSede ? sedeNames[destinationSede] : 'Destino'}
             </Text>
           </TouchableOpacity>
+          
         </View>
         
         <Animated.View style={[styles.routeDetails, { opacity: detailsOpacity }]}>
-          <View style={styles.routeInfo}>
-            <View style={styles.infoItem}>
-              <Ionicons name="walk-outline" size={18} color="#2ecc71" />
-              <Text style={styles.infoText}>{calculateDistance() ? `${calculateDistance()} m` : '--'}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Ionicons name="time-outline" size={18} color="#2ecc71" />
-              <Text style={styles.infoText}>
-                {calculateDistance() ? `${Math.ceil(parseInt(calculateDistance() || '0') / 85)} min` : '--'}
-              </Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Ionicons name={getWeatherIcon()} size={18} color="#2ecc71" />
-              <Text style={styles.infoText}>
-                {temperature ? `${temperature.toFixed(1)}°C` : '--'}
-              </Text>
-            </View>
+  <View style={styles.routeInfoContainer}></View>
+  
+  <FlatList
+  data={gridData}
+  scrollEnabled={false}
+  keyExtractor={(_, index) => `row-${index}`}
+  renderItem={({ item: row, index: rowIndex }) => (
+    <View style={styles.infoRow}>
+      {row.map((card, cardIndex) => (
+        <AnimatedTouchableItem
+          key={`card-${cardIndex}`}
+          onPress={() => setSelectedGridItem(
+            prev => prev?.row === rowIndex && prev?.col === cardIndex 
+              ? null 
+              : { row: rowIndex, col: cardIndex }
+          )}
+        >
+          <View style={[
+            styles.infoCardContent,
+            selectedGridItem?.row === rowIndex && 
+            selectedGridItem?.col === cardIndex && 
+            styles.selectedCard
+          ]}>
+            <Ionicons name={card.icon as any} size={24} color="#2ecc71" />
+            <Text style={styles.infoValue}>{card.value}</Text>
+            <Text style={styles.infoLabel}>{card.label}</Text>
           </View>
-          
-          <View style={styles.actionButtons}>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.primaryButton]}
-              onPress={openGoogleMaps}
-              disabled={!originSede || !destinationSede}
-            >
-              <Ionicons name="navigate" size={20} color="#FFF" />
-              <Text style={styles.buttonText}>Iniciar</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+        </AnimatedTouchableItem>
+      ))}
+    </View>
+  )}
+  contentContainerStyle={styles.routeInfoGrid}
+/>
+
+  <View style={styles.actionButtons}>
+    <TouchableOpacity 
+      style={[styles.actionButton, styles.primaryButton]}
+      onPress={openGoogleMaps}
+      disabled={!originSede || !destinationSede}
+    >
+      <Ionicons name="navigate" size={20} color="#FFF" />
+      <Text style={styles.buttonText}>Iniciar</Text>
+    </TouchableOpacity>
+  </View>
+</Animated.View>
       </Animated.View>
       
       <Modal
@@ -1487,6 +1625,7 @@ export default function MapScreen() {
               />
             </View>
             
+            
             <ScrollView style={styles.sedeList}>
               {filteredSedes.map((sede) => (
                 <SedeItem 
@@ -1503,7 +1642,7 @@ export default function MapScreen() {
   );
 }
 
-// Estilos
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1552,28 +1691,30 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingHorizontal: 30,
+    paddingHorizontal: 40,
     paddingBottom: 60,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: -8 }, 
+    shadowOpacity: 0.15, 
+    shadowRadius: 8, 
+    elevation: 12, 
+    zIndex: 10, 
   },
   panelHandle: {
-    width: 40,
+    width: 20,
     height: 5,
     backgroundColor: '#E0E0E0',
     alignSelf: 'center',
-    marginTop: 2,
-    marginBottom: 10,
-    borderRadius: 3,
+    marginTop: 0,
+    marginBottom: 2,
+    borderRadius: 2,
   },
+  
   routeSelectors: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 10,
+    paddingHorizontal: 12,
+    marginVertical: 12,
   },
   locationSelector: {
     flex: 1,
@@ -1581,37 +1722,93 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F8F8F8',
     padding: 12,
-    borderRadius: 8,
-    marginHorizontal: 5,
+    borderRadius: 10,
+    marginHorizontal: -14,
   },
   locationText: {
-    marginLeft: 8,
-    color: '#333',
     fontSize: 14,
-    flex: 1,
+    color: '#2d3436',
+    fontWeight: '500',
   },
   swapButton: {
-    backgroundColor: '#F8F8F8',
-    padding: 8,
+    marginHorizontal: 18,
+    zIndex: 1,
+  },
+  swapButtonInner: {
+    backgroundColor: '#2ecc71',
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    marginHorizontal: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   routeDetails: {
-    marginTop: 15,
+    marginTop: -1,
+    paddingHorizontal: 0, 
   },
   routeInfo: {
-    flexDirection: 'row',
+    flexDirection: 'column', 
     justifyContent: 'space-between',
-    marginBottom: 15,
+  },
+  routeInfoGrid: {
+    padding: 0,
+  },
+  routeInfoContainer: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between', // Distribuye el espacio entre las tarjetas
+    marginBottom: 16,
+    paddingHorizontal: 0,
+    width: '100%', // Asegura que la fila ocupe todo el ancho disponible
   },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    
   },
   infoText: {
-    marginLeft: 6,
+    marginLeft: 5,
     color: '#333',
     fontSize: 14,
+  },
+  infoCard: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 0,
+    position: 'relative',
+    overflow: 'hidden',
+    aspectRatio: 1,
+
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2d3436',
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: '#636e72',
+    textAlign: 'center',
+    lineHeight: 14,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -1622,10 +1819,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F8F8F8',
-    padding: 12,
-    borderRadius: 8,
+    padding: 6,
+    borderRadius: 10,
     flex: 1,
-    margin: 5,
+    margin: 0,
   },
   primaryButton: {
     backgroundColor: '#2ecc71',
@@ -1646,7 +1843,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingBottom: 0,
     minHeight: height * 0.7,
   },
   modalHeader: {
@@ -1698,6 +1895,11 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
+  selectorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   currentLocationMarker: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1719,4 +1921,35 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(66, 133, 244, 0.3)',
     zIndex: 1,
   },
+  placeholderText: {
+    color: '#a4b0be',
+    fontStyle: 'italic',
+  },
+  infoCardContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '120%',
+    height: '100%', // Ocupa todo el espacio del contenedor padre
+  },
+  selectedCard: {
+    backgroundColor: '#e8f5e9',
+    borderRadius: 14,  // Aumentar el radio de borde // Hacer el borde más grueso
+    borderColor: '#2ecc71',
+    padding: 0,       // Aumentar el espacio interno
+    // Añadir sombra para mayor profundidad
+    shadowColor: '#2ecc71',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  leftCard: {
+    alignSelf: 'flex-start', // Alinea a la izquierda
+  },
+  centerCard: {
+    alignSelf: 'center', // Alinea al centro
+  },
+rightCard: {
+  alignSelf: 'flex-end', // Alinea a la derecha
+},
 });
