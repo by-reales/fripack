@@ -5,42 +5,63 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import LottieView from 'lottie-react-native';
+import { View, StyleSheet } from 'react-native';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import Onboarding from './onboarding'; // Importa el componente Onboarding
+import Onboarding from './onboarding';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [isAppReady, setIsAppReady] = useState(false);
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
-  const [showOnboarding, setShowOnboarding] = useState(true); // Estado para controlar el onboarding
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (loaded) {
+    const checkOnboardingStatus = async () => {
+      const onboardingCompleted = await AsyncStorage.getItem('onboardingCompleted');
+      setShowOnboarding(onboardingCompleted !== 'true');
+    };
+
+    checkOnboardingStatus();
+  }, []);
+
+  useEffect(() => {
+    if (loaded && showOnboarding !== null) {
       SplashScreen.hideAsync();
+      setIsAppReady(true);
     }
-  }, [loaded]);
+  }, [loaded, showOnboarding]);
 
-  if (!loaded) {
-    return null;
-  }
-
-  // Función para manejar la finalización del onboarding
-  const handleOnboardingFinish = () => {
+  const handleOnboardingFinish = async () => {
+    await AsyncStorage.setItem('onboardingCompleted', 'true');
     setShowOnboarding(false);
   };
+
+  if (!loaded || showOnboarding === null) {
+    return (
+      <View style={styles.container}>
+        <LottieView
+          source={require('../animations/Animation - 1742401802107.json')}
+          autoPlay
+          loop
+          style={styles.animation}
+        />
+      </View>
+    );
+  }
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       {showOnboarding ? (
-        // Muestra el onboarding si showOnboarding es true
         <Onboarding onFinish={handleOnboardingFinish} />
       ) : (
-        // Muestra las pantallas principales si el onboarding está completo
         <>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -52,3 +73,16 @@ export default function RootLayout() {
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff', // Cambia el color de fondo según tu diseño
+  },
+  animation: {
+    width: '100%',
+    height: '100%',
+  },
+});
