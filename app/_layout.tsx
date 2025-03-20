@@ -17,6 +17,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [isAppReady, setIsAppReady] = useState(false);
+  const [isMapReady, setIsMapReady] = useState(false); // Estado para verificar si el mapa está listo
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -34,14 +35,20 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded && showOnboarding !== null) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync(); // Oculta la pantalla de splash cuando las fuentes y el onboarding están listos
       setIsAppReady(true);
+
+      // Verifica si el mapa está listo
+      if (!showOnboarding) {
+        setIsMapReady(true); // Si no hay onboarding, el mapa está listo
+      }
     }
   }, [loaded, showOnboarding]);
 
   const handleOnboardingFinish = async () => {
     await AsyncStorage.setItem('onboardingCompleted', 'true');
-    setShowOnboarding(false);
+    setShowOnboarding(false); // Actualiza el estado para ocultar el onboarding
+    setIsMapReady(true); // Marca el mapa como listo después del onboarding
   };
 
   if (!loaded || showOnboarding === null) {

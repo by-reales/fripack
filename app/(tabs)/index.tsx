@@ -1334,6 +1334,7 @@ export default function MapScreen() {
       toggleRouteDetails(false);
     }
   }, [originSede, destinationSede]);
+  
 
   const toggleRouteDetails = (show: boolean) => {
     setRouteDetails(show);
@@ -1599,29 +1600,39 @@ export default function MapScreen() {
 </View>
         
         <View style={styles.routeSelectors}>
-          <TouchableOpacity 
-            style={styles.locationSelector} 
-            onPress={() => openSedeSelector('origin')}
-          >
-            <Ionicons name="location" size={18} color="#2ecc71" />
-            <Text style={styles.locationText}>
-              {originSede ? sedeNames[originSede] : 'Origen'}
-            </Text>
-          </TouchableOpacity>
+        <TouchableOpacity 
+    style={styles.locationSelector} 
+    onPress={() => openSedeSelector('origin')}
+>
+    <Ionicons 
+        name="location" 
+        size={18} 
+        color="#2ecc71" 
+        style={styles.iconStyle} // Aplicar estilo al ícono
+    />
+    <Text style={[styles.locationText, styles.textStyle]}>
+        {originSede ? sedeNames[originSede] : 'Origen'}
+    </Text>
+</TouchableOpacity>
           
           <TouchableOpacity style={styles.swapButton} onPress={swapLocations}>
             <Ionicons name="swap-vertical" size={20} color="#2ecc71" />
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={styles.locationSelector} 
-            onPress={() => openSedeSelector('destination')}
-          >
-            <Ionicons name="flag" size={18} color="#2ecc71" />
-            <Text style={styles.locationText}>
-              {destinationSede ? sedeNames[destinationSede] : 'Destino'}
-            </Text>
-          </TouchableOpacity>
+        style={styles.locationSelector} 
+        onPress={() => openSedeSelector('destination')}
+    >
+        <Ionicons 
+            name="flag" 
+            size={18} 
+            color="#2ecc71" 
+            style={styles.iconStyle} // Aplicar estilo al ícono
+        />
+        <Text style={[styles.locationText, styles.textStyle]}>
+            {destinationSede ? sedeNames[destinationSede] : 'Destino'}
+        </Text>
+    </TouchableOpacity>
           
         </View>
         
@@ -1798,13 +1809,19 @@ const styles = StyleSheet.create({
     shadowRadius: 8, 
     elevation: 12, 
     zIndex: 10, 
-    height: hp('40%'), // ✅ 40% de la altura
+    height: hp('40%'), // 40% de la altura
   },
   panelHandle: {
     width: '100%',
     alignItems: 'center',
     paddingVertical: 5,
   },
+  iconStyle: {
+    marginRight: 2, // Espacio entre el ícono y el texto
+},
+textStyle: {
+    marginLeft: 2, // Espacio entre el ícono y el texto (alternativa)
+},
   
   routeSelectors: {
     flexDirection: 'row',
@@ -1816,6 +1833,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#F8F8F8',
     padding: 12,
     borderRadius: 10,
@@ -1825,7 +1843,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#2d3436',
     fontWeight: '500',
-  },
+    textAlign: 'center', // Centrar el texto
+},
   swapButton: {
     marginHorizontal: 18,
     zIndex: 1,
@@ -1926,7 +1945,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     marginLeft: 8,
-    color: '#333',
+    color: '#FFF',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -1941,7 +1960,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
     paddingBottom: 0,
-    minHeight: hp('70%'), // ✅ 70% de la altura
+    minHeight: hp('70%'), // 70% de la altura
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1953,6 +1972,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
+    textAlign: 'center', // Centrar el texto
+        flex: 1,
   },
   searchContainer: {
     flexDirection: 'row',
