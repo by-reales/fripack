@@ -6,13 +6,23 @@ import axios from 'axios';
 import * as ExpoLocation from 'expo-location';
 import CustomMarker, { LocationKey, Location } from '../../assets/markers';
 import { useEffect, useRef, useState } from "react";
+import Config from 'react-native-config'; // seguridad de la API
+import { heightPercentageToDP as hp, widthPercentageToDP as wp } from 'react-native-responsive-screen'; // Responsividad
+
+const UV_API_KEY = Config.UV_API_KEY;
+
+
 
 const API_KEY = '01d1e2a2ab57d9ea74d3d44680b5d8d7';
 const { height, width } = Dimensions.get('window');
 
+
 interface AnimatedTouchableItemProps {
   children: React.ReactNode;
   onPress: () => void;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  accessibilityRole?: string;
 }
 
 const AnimatedTouchableItem: React.FC<AnimatedTouchableItemProps> = ({ children, onPress }) => {
@@ -104,9 +114,21 @@ const mapStyle = [
 ];
 
 // Componente SedeItem
-const SedeItem = ({ sede, onSelect }: { sede: LocationKey, onSelect: (sede: LocationKey) => void }) => {
+const SedeItem = ({ 
+  sede, 
+  onSelect, 
+  selectionType 
+}: { 
+  sede: LocationKey, 
+  onSelect: (sede: LocationKey) => void, 
+  selectionType: 'origin' | 'destination' 
+}) => {
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
+      accessible={true}
+      accessibilityLabel={`${sedeNames[sede]}. ${sedeAddresses[sede]}. Seleccionar como ${selectionType === 'origin' ? 'punto de partida' : 'destino'}`}
+      accessibilityRole="button"
+      accessibilityHint={`Toca para seleccionar ${sedeNames[sede]} como ${selectionType === 'origin' ? 'punto de partida' : 'destino'}`}
       style={styles.sedeItem} 
       onPress={() => onSelect(sede)}
     >
@@ -115,11 +137,24 @@ const SedeItem = ({ sede, onSelect }: { sede: LocationKey, onSelect: (sede: Loca
           name="location" 
           size={24} 
           color="#2ecc71" 
+          accessible={false} // Evita que el ícono sea leído por el lector de pantalla
         />
       </View>
       <View style={styles.sedeInfoContainer}>
-        <Text style={styles.sedeName}>{sedeNames[sede]}</Text>
-        <Text style={styles.sedeAddress}>{sedeAddresses[sede]}</Text>
+        <Text 
+          style={styles.sedeName}
+          accessible={true}
+          accessibilityLabel={`Nombre: ${sedeNames[sede]}`}
+        >
+          {sedeNames[sede]}
+        </Text>
+        <Text 
+          style={styles.sedeAddress}
+          accessible={true}
+          accessibilityLabel={`Dirección: ${sedeAddresses[sede]}`}
+        >
+          {sedeAddresses[sede]}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -1607,6 +1642,13 @@ export default function MapScreen() {
               ? null 
               : { row: rowIndex, col: cardIndex }
           )}
+          accessibilityLabel={`${card.label}: ${card.value}`}
+          accessibilityHint={
+            selectedGridItem?.row === rowIndex && selectedGridItem?.col === cardIndex
+              ? "Tarjeta seleccionada. Toca para deseleccionar."
+              : "Toca para seleccionar esta tarjeta."
+          }
+          accessibilityRole="button"
         >
           <View style={[
             styles.infoCardContent,
@@ -1614,9 +1656,26 @@ export default function MapScreen() {
             selectedGridItem?.col === cardIndex && 
             styles.selectedCard
           ]}>
-            <Ionicons name={card.icon as any} size={24} color="#2ecc71" />
-            <Text style={styles.infoValue}>{card.value}</Text>
-            <Text style={styles.infoLabel}>{card.label}</Text>
+            <Ionicons 
+              name={card.icon as any} 
+              size={24} 
+              color="#2ecc71" 
+              accessible={false} // Evita que el ícono sea leído por el lector de pantalla
+            />
+            <Text 
+              style={styles.infoValue}
+              accessible={true}
+              accessibilityLabel={`Valor: ${card.value}`}
+            >
+              {card.value}
+            </Text>
+            <Text 
+              style={styles.infoLabel}
+              accessible={true}
+              accessibilityLabel={`Descripción: ${card.label}`}
+            >
+              {card.label}
+            </Text>
           </View>
         </AnimatedTouchableItem>
       ))}
@@ -1670,10 +1729,9 @@ export default function MapScreen() {
             <ScrollView style={styles.sedeList}>
               {filteredSedes.map((sede) => (
                 <SedeItem 
-                  key={sede} 
-                  sede={sede} 
-                  onSelect={selectSede} 
-                />
+                  key={sede}
+                  sede={sede}
+                  onSelect={selectSede} selectionType={'origin'}                />
               ))}
             </ScrollView>
           </View>
@@ -1694,12 +1752,12 @@ const styles = StyleSheet.create({
   },
   locationButton: {
     position: 'absolute',
-    top: 80,
-    right: 16,
+    top: hp('10%'),
+    right: wp('4%'),
     backgroundColor: 'white',
     borderRadius: 30,
-    width: 44,
-    height: 44,
+    width: wp('12%'),
+    height: wp('12%'),
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -1710,12 +1768,12 @@ const styles = StyleSheet.create({
   },
   mapTypeButton: {
     position: 'absolute',
-    top: 130,
-    right: 16,
+    top: hp('18%'),
+    right: wp('4%'),
     backgroundColor: 'white',
     borderRadius: 30,
-    width: 44,
-    height: 44,
+    width: wp('12%'),
+    height: wp('12%'),
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -1732,14 +1790,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingHorizontal: 40,
-    paddingBottom: 60,
+    paddingHorizontal: wp('5%'), // Antes: 40
+    paddingBottom: hp('7%'),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -8 }, 
     shadowOpacity: 0.15, 
     shadowRadius: 8, 
     elevation: 12, 
     zIndex: 10, 
+    height: hp('40%'), // ✅ 40% de la altura
   },
   panelHandle: {
     width: '100%',
@@ -1882,7 +1941,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
     paddingBottom: 0,
-    minHeight: height * 0.7,
+    minHeight: hp('70%'), // ✅ 70% de la altura
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1924,14 +1983,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sedeName: {
-    fontSize: 16,
+    fontSize: hp('2%'),   // Antes: 16
     color: '#333',
     fontWeight: '500',
   },
   sedeAddress: {
-    fontSize: 14,
+    fontSize: hp('1.8%'),
     color: '#666',
-    marginTop: 2,
+    marginTop: hp('0.5%'),
   },
   selectorContent: {
     flexDirection: 'row',
@@ -1990,3 +2049,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
 });
+
+function setCustomDimensions(arg0: { width: number; height: number; }) {
+  throw new Error('Function not implemented.');
+}
