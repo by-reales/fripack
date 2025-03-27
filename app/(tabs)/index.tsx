@@ -26,8 +26,9 @@ import {
   heightPercentageToDP as hp,
   widthPercentageToDP as wp,
 } from "react-native-responsive-screen"; // Responsividad
+import { getWeatherApiKey } from '../../apiConfig';
 
-const UV_API_KEY = Config.UV_API_KEY;
+
 
 const API_KEY = "01d1e2a2ab57d9ea74d3d44680b5d8d7"; //API para los datos del grid excepto el UV
 const { height, width } = Dimensions.get("window"); //Obtiene las dimensiones de la pantalla
@@ -290,16 +291,35 @@ export default function MapScreen() {
 
 //centerOnUserLocation: Centra el mapa en la ubicación del usuario.
 
-  const fetchUVIndex = async (lat: number, lon: number) => {
-    try {
-      const response = await axios.get(
-        `https://api.weatherapi.com/v1/current.json?key=1eb5ae58653e491cbeb192832251203&q=${lat},${lon}`
-      );
-      setUvIndex(response.data.current.uv); // Extrae el índice UV
-    } catch (error) {
-      console.error("Error obteniendo el índice UV", error);
+const fetchUVIndex = async (lat: number, lon: number) => {
+  try {
+    
+    if (Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+      throw new Error("Coordenadas inválidas");
     }
-  };
+
+    
+    const API_KEY = getWeatherApiKey();
+
+    const response = await axios.get(
+      `https://api.weatherapi.com/v1/current.json?key=${encodeURIComponent(API_KEY)}&q=${lat},${lon}`
+    );
+
+   
+    if (!response.data?.current?.uv) {
+      throw new Error("Datos UV no disponibles");
+    }
+
+    setUvIndex(response.data.current.uv);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("Error UV:", error.message);
+    } else {
+      console.error("Error UV:", error);
+    }
+    Alert.alert("Error", "No se pudo obtener el índice UV");
+  }
+};
 
   const getUVDescription = (uvIndex: number | null): string => {
     if (uvIndex === null) return "--";

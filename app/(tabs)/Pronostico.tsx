@@ -230,7 +230,7 @@ export default function WeatherForecastScreen() {
           entering={FadeInRight.delay(400)}
           style={styles.sectionTitle}
         >
-          Pronóstico 7 días
+          Pronóstico 3 días
         </Animated.Text>
         
         <ScrollView 
