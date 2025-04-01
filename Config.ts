@@ -8,4 +8,6 @@ export const getWeatherApiKey = () => {
   ];
   
   return parts.join('');
+
+  
 };

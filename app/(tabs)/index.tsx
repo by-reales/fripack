@@ -1,34 +1,14 @@
 import React, { ReactNode } from "react";
-import {
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  TextInput,
-  ScrollView,
-  Alert,
-  Linking,
-  Pressable,
-  FlatList,
-  PanResponder,
-} from "react-native";
+import {Animated,Dimensions,TouchableOpacity,View,Text,StyleSheet,Modal,TextInput,ScrollView,Alert,Linking,FlatList,PanResponder,} from "react-native";
 import MapView, { PROVIDER_GOOGLE, Marker, Polyline } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import * as ExpoLocation from "expo-location";
 import CustomMarker, { LocationKey, Location } from "../../assets/markers";
 import { useEffect, useRef, useState } from "react";
-import Config from "react-native-config"; // seguridad de la API
-import {
-  heightPercentageToDP as hp,
-  widthPercentageToDP as wp,
+import {heightPercentageToDP as hp, widthPercentageToDP as wp,
 } from "react-native-responsive-screen"; // Responsividad
-import { getWeatherApiKey } from '../../apiConfig';
-
-
+import { getWeatherApiKey } from '../../Config';
 
 const API_KEY = "01d1e2a2ab57d9ea74d3d44680b5d8d7"; //API para los datos del grid excepto el UV
 const { height, width } = Dimensions.get("window"); //Obtiene las dimensiones de la pantalla
@@ -1423,6 +1403,7 @@ const fetchUVIndex = async (lat: number, lon: number) => {
   const fetchTemperature = async (lat: number, lon: number) => {
     setLoading(true);
     try {
+      
       const response = await axios.get(
         `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
       );

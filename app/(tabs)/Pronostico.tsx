@@ -4,7 +4,6 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInRight, FadeInUp } from 'react-native-reanimated';
-
 const API_KEY = '1eb5ae58653e491cbeb192832251203'; // Key de weatherapi.com
 const { width } = Dimensions.get('window');
 
@@ -132,10 +131,7 @@ export default function WeatherForecastScreen() {
   }
 
   return (
-    <LinearGradient
-      colors={['#2ecc71', '#1abc9c']} // Degradado basado en el color #2ecc71
-      style={styles.container}
-    >
+    <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Encabezado con clima actual */}
         <Animated.View 
@@ -147,7 +143,7 @@ export default function WeatherForecastScreen() {
             <Ionicons 
               name={getWeatherIcon(current?.condition.text || '')} 
               size={80} 
-              color="white" 
+              color="#2ecc71" 
             />
             <View>
               <Text style={styles.temperatureText}>
@@ -162,32 +158,32 @@ export default function WeatherForecastScreen() {
           {/* Grid de detalles */}
           <View style={styles.detailGrid}>
             <View style={styles.detailItem}>
-              <Ionicons name="thermometer" size={24} color="white" />
+              <Ionicons name="thermometer" size={24} color="#2ecc71" />
               <Text style={styles.detailText}>
                 Sensación {current?.feelslike_c.toFixed(0)}°
               </Text>
             </View>
             <View style={styles.detailItem}>
-              <Ionicons name="water" size={24} color="white" />
+              <Ionicons name="water" size={24} color="#2ecc71" />
               <Text style={styles.detailText}>
                 {current?.humidity}%
               </Text>
             </View>
             <View style={styles.detailItem}>
-              <Ionicons name="speedometer" size={24} color="white" />
+              <Ionicons name="speedometer" size={24} color="#2ecc71" />
               <Text style={styles.detailText}>
                 {current?.wind_kph} km/h
               </Text>
             </View>
             <View style={styles.detailItem}>
-              <Ionicons name="sunny" size={24} color="white" />
+              <Ionicons name="sunny" size={24} color="#2ecc71" />
               <Text style={styles.detailText}>
                 UV {current?.uv}
               </Text>
             </View>
           </View>
         </Animated.View>
-
+  
         {/* Pronóstico por horas */}
         <Animated.Text 
           entering={FadeInRight.delay(400)}
@@ -213,7 +209,7 @@ export default function WeatherForecastScreen() {
               <Ionicons 
                 name={getWeatherIcon(hour.condition.text)} 
                 size={30} 
-                color="white" 
+                color="#2ecc71" 
               />
               <Text style={styles.hourlyForecastTemp}>
                 {hour.temp_c.toFixed(0)}°
@@ -224,7 +220,7 @@ export default function WeatherForecastScreen() {
             </Animated.View>
           ))}
         </ScrollView>
-
+  
         {/* Pronóstico semanal */}
         <Animated.Text 
           entering={FadeInRight.delay(400)}
@@ -250,7 +246,7 @@ export default function WeatherForecastScreen() {
               <Ionicons 
                 name={getWeatherIcon(day.day.condition.text)} 
                 size={40} 
-                color="white" 
+                color="#2ecc71" 
               />
               <View style={styles.tempContainer}>
                 <Text style={styles.maxTemp}>
@@ -267,13 +263,14 @@ export default function WeatherForecastScreen() {
           ))}
         </ScrollView>
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'white',
   },
   scrollContainer: {
     padding: 20,
@@ -283,7 +280,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'white',
   },
   currentWeatherCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -293,7 +290,7 @@ const styles = StyleSheet.create({
   },
   locationTitle: {
     fontSize: 24,
-    color: 'white',
+    color: '#2ecc71',
     fontWeight: '600',
     marginBottom: 15,
     textAlign: 'center',
@@ -306,12 +303,12 @@ const styles = StyleSheet.create({
   },
   temperatureText: {
     fontSize: 48,
-    color: 'white',
+    color: '#2ecc71',
     fontWeight: '300',
   },
   conditionText: {
     fontSize: 18,
-    color: 'white',
+    color: '#2ecc71',
     textAlign: 'center',
     textTransform: 'capitalize',
   },
@@ -331,13 +328,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   detailText: {
-    color: 'white',
+    color: '#2ecc71',
     fontSize: 16,
     fontWeight: '500',
   },
   sectionTitle: {
     fontSize: 20,
-    color: 'white',
+    color: '#2ecc71',
     fontWeight: '600',
     marginBottom: 20,
   },
@@ -353,18 +350,18 @@ const styles = StyleSheet.create({
     width: 100,
   },
   hourlyForecastTime: {
-    color: 'white',
+    color: '#2ecc71',
     fontWeight: '500',
     marginBottom: 10,
   },
   hourlyForecastTemp: {
-    color: 'white',
+    color: '#2ecc71',
     fontSize: 18,
     fontWeight: '600',
     marginVertical: 5,
   },
   hourlyForecastRain: {
-    color: 'white',
+    color: '#2ecc71',
     fontSize: 14,
   },
   forecastContainer: {
@@ -379,7 +376,7 @@ const styles = StyleSheet.create({
     width: 120,
   },
   forecastDay: {
-    color: 'white',
+    color: '#2ecc71',
     fontWeight: '500',
     marginBottom: 10,
     textTransform: 'capitalize',
@@ -390,16 +387,16 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   maxTemp: {
-    color: 'white',
+    color: '#2ecc71',
     fontSize: 18,
     fontWeight: '600',
   },
   minTemp: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(46, 204, 113, 0.7)',
     fontSize: 16,
   },
   rainChance: {
-    color: 'white',
+    color: '#2ecc71',
     fontSize: 14,
     marginTop: 5,
   },
