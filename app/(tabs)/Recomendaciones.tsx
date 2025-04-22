@@ -84,10 +84,9 @@ const Recomendaciones = () => {
   // Recomendaciones de alimentación
   const getFoodRecommendations = () => {
     return [
-      'Bebidas: agua de coco, limonada natural, jugo de tamarindo',
-      'Agua de panela con limón para reponer electrolitos',
+      'Bebidas: agua de coco, limonada natural, mucha agua',
       'Frutas: sandía, melón, piña (hidratantes)',
-      'Comidas ligeras: ensaladas, ceviches, sopas frías',
+      'Comidas ligeras: ensaladas, sopas frías',
       'Evita comidas pesadas y grasosas en horas de calor'
     ];
   };

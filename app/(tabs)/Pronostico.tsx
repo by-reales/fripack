@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import axios from 'axios';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInRight, FadeInUp } from 'react-native-reanimated';
 const API_KEY = '1eb5ae58653e491cbeb192832251203'; // Key de weatherapi.com
 const { width } = Dimensions.get('window');
