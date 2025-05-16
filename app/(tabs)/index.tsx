@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React from "react";
 import {Animated,Dimensions,TouchableOpacity,View,Text,StyleSheet,Modal,TextInput,ScrollView,Alert,Linking,FlatList,PanResponder,} from "react-native";
 import MapView, { PROVIDER_GOOGLE, Marker, Polyline } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,13 +7,12 @@ import * as ExpoLocation from "expo-location";
 import CustomMarker, { LocationKey, Location } from "../../assets/markers";
 import { useEffect, useRef, useState } from "react";
 import {heightPercentageToDP as hp, widthPercentageToDP as wp,
-} from "react-native-responsive-screen"; // Responsividad
-import { getWeatherApiKey } from '../../Config';
+} from "react-native-responsive-screen"; 
+import * as Network from "expo-network";
 
-const API_KEY = "01d1e2a2ab57d9ea74d3d44680b5d8d7"; //API para los datos del grid excepto el UV
-const { height, width } = Dimensions.get("window"); //Obtiene las dimensiones de la pantalla
+import config from '../../Config';
 
-//Todo lo que viene ahora maneja la lógica para que los elementos del grid se esaclen ligeramente al presionarlos
+const { height, width } = Dimensions.get("window"); 
 
 interface AnimatedTouchableItemProps {
   children: React.ReactNode;
@@ -31,19 +30,19 @@ const AnimatedTouchableItem: React.FC<AnimatedTouchableItemProps> = ({
 
   const handlePressIn = () => {
     Animated.spring(scale, {
-      toValue: 1.1, // Escala ligeramente el elemento hacia adentro
+      toValue: 1.1, 
       useNativeDriver: true,
       speed: 50,
-      bounciness: 30, // Añade rebote
+      bounciness: 30, 
     }).start();
   };
 
   const handlePressOut = () => {
     Animated.spring(scale, {
-      toValue: 1, // Vuelve a la escala normal
+      toValue: 1, 
       useNativeDriver: true,
       speed: 50,
-      bounciness: 10, // Añade rebote
+      bounciness: 10, 
     }).start();
   };
 
@@ -60,8 +59,6 @@ const AnimatedTouchableItem: React.FC<AnimatedTouchableItemProps> = ({
     </TouchableOpacity>
   );
 };
-
-//hasta aquí llega la logica para que los elementos del grid se esaclen ligeramente al presionarlos
 
 const locations: Record<LocationKey, Location> = {
   H1: { latitude: 10.994262, longitude: -74.792331 },
@@ -90,7 +87,6 @@ const sedeAddresses: Record<LocationKey, string> = {
   H7: "Headquarter H7",
 };
 
-// Keyla, aquí puedes quitar y agregar elementos del mapa
 const mapStyle = [
   {
     featureType: "administrative",
@@ -117,7 +113,6 @@ const mapStyle = [
   },
 ];
 
-// Key, este es un componente que representa una sede en la lista de selección
 const SedeItem = ({
   sede,
   onSelect,
@@ -147,7 +142,7 @@ const SedeItem = ({
           name="location"
           size={24}
           color="#2ecc71"
-          accessible={false} // Evita que el ícono sea leído por el lector de pantalla
+          accessible={false} 
         />
       </View>
       <View style={styles.sedeInfoContainer}>
@@ -170,12 +165,11 @@ const SedeItem = ({
   );
 };
 
-// Aquí se calcula la distancia entre dos puntos en la Tierra usando la fórmula del haversine.
 const calculateDirectDistance = (
   point1: Location,
   point2: Location
 ): number => {
-  const R = 6371000; // Radio de la Tierra en metros
+  const R = 6371000; 
   const lat1 = (point1.latitude * Math.PI) / 180;
   const lat2 = (point2.latitude * Math.PI) / 180;
   const dLat = ((point2.latitude - point1.latitude) * Math.PI) / 180;
@@ -186,13 +180,11 @@ const calculateDirectDistance = (
     Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-  return Math.round(R * c); // Distancia en metros
+  return Math.round(R * c); 
 };
 
-// Ahora este es el componente principal que maneja la lógica del mapa, la selección de sedes, la animación de la ruta,
-//  y la obtención de datos meteorológicos.
-
 export default function MapScreen() {
+  const [isConnected, setIsConnected] = useState<boolean>(true);
   const [originSede, setOriginSede] = useState<LocationKey | "">("");
   const [destinationSede, setDestinationSede] = useState<LocationKey | "">("");
   const [route, setRoute] = useState<Location[]>([]);
@@ -222,7 +214,36 @@ export default function MapScreen() {
   } | null>(null);
   const currentHeightRef = useRef(140);
 
-  // en el UseEffect se maneja la altura del panel inferior.
+  useEffect(() => {
+    const checkConnection = async () => {
+      const networkState = await Network.getNetworkStateAsync();
+      setIsConnected(networkState.isConnected ?? false);
+      
+      if (!networkState.isConnected) {
+        Alert.alert(
+          "Sin conexión",
+          "El mapa y algunos datos no estarán disponibles",
+          [{ text: "OK" }]
+        );
+      }
+    };
+
+    checkConnection();
+    
+    const subscription = Network.addNetworkStateListener((state: Network.NetworkState) => {
+      const isConnected = state.isConnected ?? false; // Handle undefined case
+      setIsConnected(isConnected);
+      if (!isConnected) {
+        Alert.alert(
+          "Conexión perdida", 
+          "Funcionalidades limitadas sin internet",
+          [{ text: "OK" }]
+        );
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     const listenerId = panelHeight.addListener(({ value }) => {
@@ -231,7 +252,6 @@ export default function MapScreen() {
     return () => panelHeight.removeListener(listenerId);
   }, []);
 
-  // Permite arrastrar el panel inferior para expandirlo o contraerlo.
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -263,15 +283,8 @@ export default function MapScreen() {
     })
   ).current;
 
-//fetchUVIndex: Obtiene el índice UV de la ubicación actual.
-
-//getUVDescription: Devuelve una descripción del índice UV.
-
-//getCurrentLocation: Obtiene la ubicación actual del usuario.
-
-//centerOnUserLocation: Centra el mapa en la ubicación del usuario.
-
 const fetchUVIndex = async (lat: number, lon: number) => {
+  if (!isConnected) return; 
   try {
     
     if (Math.abs(lat) > 90 || Math.abs(lon) > 180) {
@@ -279,10 +292,15 @@ const fetchUVIndex = async (lat: number, lon: number) => {
     }
 
     
-    const API_KEY = getWeatherApiKey();
+    const API_KEY = process.env.EXPO_PUBLIC_UV_API_KEY;
 
     const response = await axios.get(
-      `https://api.weatherapi.com/v1/current.json?key=${encodeURIComponent(API_KEY)}&q=${lat},${lon}`
+      `https://api.weatherapi.com/v1/current.json`, {
+        params: {
+          key: API_KEY,
+          q: `${lat},${lon}`
+        }
+      }
     );
 
    
@@ -310,7 +328,6 @@ const fetchUVIndex = async (lat: number, lon: number) => {
     return "Extremo";
   };
 
-  // Solicitar permisos de ubicación al cargar el componente
   useEffect(() => {
     (async () => {
       const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
@@ -327,7 +344,6 @@ const fetchUVIndex = async (lat: number, lon: number) => {
     })();
   }, []);
 
-  // Función para obtener la ubicación actual
   const getCurrentLocation = async () => {
     try {
       const location = await ExpoLocation.getCurrentPositionAsync({
@@ -356,7 +372,6 @@ const fetchUVIndex = async (lat: number, lon: number) => {
     }
   };
 
-  // Función para centrar el mapa en la ubicación del usuario
   const centerOnUserLocation = () => {
     if (currentLocation && mapRef.current) {
       mapRef.current.animateToRegion(
@@ -369,8 +384,6 @@ const fetchUVIndex = async (lat: number, lon: number) => {
       );
     }
   };
-
-  //Aquí el useEffect calcula la ruta entre las sedes seleccionadas y la anima en el mapa.
 
   useEffect(() => {
     if (originSede && destinationSede) {
@@ -1359,7 +1372,6 @@ const fetchUVIndex = async (lat: number, lon: number) => {
         }
       }
 
-      // Si no se encontró una ruta específica para el horario, usar la ruta predeterminada
       if (newRoute.length === 0) {
         newRoute = [locations[originSede], locations[destinationSede]];
       }
@@ -1401,18 +1413,28 @@ const fetchUVIndex = async (lat: number, lon: number) => {
   };
 
   const fetchTemperature = async (lat: number, lon: number) => {
+    if (!isConnected) { // NUEVO: Bloqueo sin conexión
+      setTemperature(null);
+      setWeather(null);
+      setHumidity(null);
+      setFeelsLike(null);
+      return;
+    }
+    
     setLoading(true);
     try {
-      
       const response = await axios.get(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
+        `${config.WEATHER_BASE_URL}?lat=${lat}&lon=${lon}&units=metric&appid=${config.API_KEY}`
       );
       setTemperature(response.data.main.temp);
       setWeather(response.data.weather[0].main);
       setHumidity(response.data.main.humidity);
-      setFeelsLike(response.data.main.feels_like); // <- Añadir esto
+      setFeelsLike(response.data.main.feels_like);
     } catch (error) {
-      console.error("Error obteniendo la temperatura", error);
+      setTemperature(null);
+      setWeather(null);
+      setHumidity(null);
+      setFeelsLike(null);
     } finally {
       setLoading(false);
     }
@@ -1477,34 +1499,6 @@ const fetchUVIndex = async (lat: number, lon: number) => {
     }
   };
 
-// hasta aquí se hace todo esto:
-
-//toggleRouteDetails: Muestra u oculta los detalles de la ruta.
-
-//fetchTemperature: Obtiene la temperatura y el clima de la ubicación actual.
-
-//interpolatePoints: Interpola puntos entre dos ubicaciones para animar la ruta.
-
-//animateRoute: Anima la ruta en el mapa.
-
-//getWeatherIcon: Devuelve un ícono basado en el clima actual.
-
-
-
-//AHORA se hace esto:
-
-//swapLocations: Intercambia las sedes de origen y destino.
-
-//openSedeSelector: Abre el modal para seleccionar una sede.
-
-//selectSede: Selecciona una sede como origen o destino.
-
-//filteredSedes: Filtra las sedes basadas en la búsqueda.
-
-//calculateDistance: Calcula la distancia entre dos sedes.
-
-//openGoogleMaps: Abre Google Maps con la ruta predefinida.
-
   const swapLocations = () => {
     if (originSede && destinationSede) {
       setOriginSede(destinationSede);
@@ -1562,7 +1556,6 @@ const fetchUVIndex = async (lat: number, lon: number) => {
     return (distance * 1000).toFixed(0);
   };
 
-  // Función para abrir Google Maps con la ruta predefinida
   const openGoogleMaps = () => {
     if (!originSede || !destinationSede || route.length === 0) return;
 
@@ -1577,7 +1570,6 @@ const fetchUVIndex = async (lat: number, lon: number) => {
     );
   };
 
-  //gridData: Datos para mostrar en la cuadrícula de información.
   const gridData = [
     [
       {
@@ -1612,21 +1604,23 @@ const fetchUVIndex = async (lat: number, lon: number) => {
       {
         icon: "sunny-outline",
         value: uvIndex !== null ? `UV: ${uvIndex}` : "UV: --",
-        label: uvIndex !== null ? ` ${getUVDescription(uvIndex)}` : "Índice UV", // Aquí se añade "UV" antes de la descripción
+        label: uvIndex !== null ? ` ${getUVDescription(uvIndex)}` : "Índice UV", 
       },
     ],
   ];
 
-//MapView: Muestra el mapa con los marcadores y la ruta animada.
-
-//TouchableOpacity: Botones para centrar la ubicación y cambiar el tipo de mapa.
-
-//Animated.View: Panel inferior que muestra los detalles de la ruta y la información meteorológica.
-
-//Modal: Modal para seleccionar la sede de origen o destino.
-
   return (
     <View style={styles.container}>
+      {/* NUEVO: Banner de conexión */}
+      {!isConnected && (
+        <View style={styles.connectionBanner}>
+          <Ionicons name="cloud-offline" size={20} color="white" />
+          <Text style={styles.connectionText}>
+            Modo offline - Funcionalidades limitadas
+          </Text>
+        </View>
+      )}
+  
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
@@ -1658,7 +1652,7 @@ const fetchUVIndex = async (lat: number, lon: number) => {
             }}
           />
         ))}
-
+  
         {currentLocation && (
           <Marker
             coordinate={{
@@ -1673,7 +1667,7 @@ const fetchUVIndex = async (lat: number, lon: number) => {
             </View>
           </Marker>
         )}
-
+  
         {animatedRoute.length > 0 && (
           <Polyline
             coordinates={animatedRoute}
@@ -1683,14 +1677,14 @@ const fetchUVIndex = async (lat: number, lon: number) => {
           />
         )}
       </MapView>
-
+  
       <TouchableOpacity
         style={styles.locationButton}
         onPress={centerOnUserLocation}
       >
         <Ionicons name="locate" size={22} color="#2ecc71" />
       </TouchableOpacity>
-
+  
       <TouchableOpacity
         style={styles.mapTypeButton}
         onPress={() =>
@@ -1703,12 +1697,12 @@ const fetchUVIndex = async (lat: number, lon: number) => {
           color="#2ecc71"
         />
       </TouchableOpacity>
-
+  
       <Animated.View style={[styles.panel, { height: panelHeight }]}>
         <View style={styles.panelHandle} {...panResponder.panHandlers}>
           <View style={styles.panelHandleBar} />
         </View>
-
+  
         <View style={styles.routeSelectors}>
           <TouchableOpacity
             style={styles.locationSelector}
@@ -1718,17 +1712,17 @@ const fetchUVIndex = async (lat: number, lon: number) => {
               name="location"
               size={18}
               color="#2ecc71"
-              style={styles.iconStyle} // Aplicar estilo al ícono
+              style={styles.iconStyle} 
             />
             <Text style={[styles.locationText, styles.textStyle]}>
               {originSede ? sedeNames[originSede] : "Origen"}
             </Text>
           </TouchableOpacity>
-
+  
           <TouchableOpacity style={styles.swapButton} onPress={swapLocations}>
             <Ionicons name="swap-vertical" size={20} color="#2ecc71" />
           </TouchableOpacity>
-
+  
           <TouchableOpacity
             style={styles.locationSelector}
             onPress={() => openSedeSelector("destination")}
@@ -1737,19 +1731,19 @@ const fetchUVIndex = async (lat: number, lon: number) => {
               name="flag"
               size={18}
               color="#2ecc71"
-              style={styles.iconStyle} // Aplicar estilo al ícono
+              style={styles.iconStyle} 
             />
             <Text style={[styles.locationText, styles.textStyle]}>
               {destinationSede ? sedeNames[destinationSede] : "Destino"}
             </Text>
           </TouchableOpacity>
         </View>
-
+  
         <Animated.View
           style={[styles.routeDetails, { opacity: detailsOpacity }]}
         >
           <View style={styles.routeInfoContainer}></View>
-
+  
           <FlatList
             data={gridData}
             scrollEnabled={false}
@@ -1787,7 +1781,7 @@ const fetchUVIndex = async (lat: number, lon: number) => {
                         name={card.icon as any}
                         size={24}
                         color="#2ecc71"
-                        accessible={false} // Evita que el ícono sea leído por el lector de pantalla
+                        accessible={false} 
                       />
                       <Text
                         style={styles.infoValue}
@@ -1810,7 +1804,7 @@ const fetchUVIndex = async (lat: number, lon: number) => {
             )}
             contentContainerStyle={styles.routeInfoGrid}
           />
-
+  
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={[styles.actionButton, styles.primaryButton]}
@@ -1823,7 +1817,7 @@ const fetchUVIndex = async (lat: number, lon: number) => {
           </View>
         </Animated.View>
       </Animated.View>
-
+  
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -1840,7 +1834,7 @@ const fetchUVIndex = async (lat: number, lon: number) => {
                 <Ionicons name="close" size={24} color="#2ecc71" />
               </TouchableOpacity>
             </View>
-
+  
             <View style={styles.searchContainer}>
               <Ionicons name="search" size={20} color="#999" />
               <TextInput
@@ -1851,7 +1845,7 @@ const fetchUVIndex = async (lat: number, lon: number) => {
                 autoFocus={true}
               />
             </View>
-
+  
             <ScrollView style={styles.sedeList}>
               {filteredSedes.map((sede) => (
                 <SedeItem
@@ -1870,289 +1864,289 @@ const fetchUVIndex = async (lat: number, lon: number) => {
 }
 
 const styles = StyleSheet.create({
-  container: { // Estilo del contenedor principal
-    flex: 1, //flex: 1: Hace que el contenedor ocupe todo el espacio disponible en la pantalla.
-    backgroundColor: "#F5F5F5", //backgroundColor: "#F5F5F5": Define el color de fondo del contenedor principal como un gris claro.
+  container: { 
+    flex: 1, 
+    backgroundColor: "#F5F5F5", 
   },
 
-  map: { // Estilo del mapa
-    ...StyleSheet.absoluteFillObject, //...StyleSheet.absoluteFillObject: Hace que el mapa ocupe todo el espacio disponible.
+  map: { 
+    ...StyleSheet.absoluteFillObject, 
   },
 
-  locationButton: { // Estilo del botón para centrar la ubicación
-    position: "absolute", //position: "absolute": Posiciona el botón de manera absoluta en la pantalla.
-    top: hp("10%"), //top: hp("10%"): Coloca el botón a un 10% de la parte superior de la pantalla.
-    right: wp("4%"), //right: wp("4%"): Coloca el botón a un 4% del borde derecho de la pantalla.
-    backgroundColor: "white", //backgroundColor: "white": Fondo blanco para el botón.
-    borderRadius: 30, //borderRadius: 30: Hace que el botón sea circular.
-    width: wp("12%"), //width: wp("12%") y height: wp("12%"): Define el tamaño del botón como un 12% del ancho de la pantalla.
-    height: wp("12%"), //width: wp("12%") y height: wp("12%"): Define el tamaño del botón como un 12% del ancho de la pantalla.
-    justifyContent: "center", //justifyContent: "center" y alignItems: "center": Centra el ícono dentro del botón.
-    alignItems: "center", //justifyContent: "center" y alignItems: "center": Centra el ícono dentro del botón.
-    shadowColor: "#000", //shadowColor, shadowOffset, shadowOpacity, shadowRadius: Añade una sombra al botón.
-    shadowOffset: { width: 0, height: 2 }, //shadowColor, shadowOffset, shadowOpacity, shadowRadius: Añade una sombra al botón.
+  locationButton: { 
+    position: "absolute", 
+    top: hp("10%"), 
+    right: wp("4%"), 
+    backgroundColor: "white", 
+    borderRadius: 30, 
+    width: wp("12%"), 
+    height: wp("12%"), 
+    justifyContent: "center", 
+    alignItems: "center", 
+    shadowColor: "#000", 
+    shadowOffset: { width: 0, height: 2 }, 
     shadowOpacity: 0.2, 
     shadowRadius: 3,
-    elevation: 4, //elevation: 4: Añade una elevación (sombra) en Android.
+    elevation: 4, 
   },
 
-  mapTypeButton: { // Estilo del botón para cambiar el tipo de mapa
-    position: "absolute", //position: "absolute": Posiciona el botón de manera absoluta en la pantalla.
-    top: hp("18%"), //top: hp("18%"): Coloca el botón a un 18% de la parte superior de la pantalla.
-    right: wp("4%"), //right: wp("4%"): Coloca el botón a un 4% del borde derecho de la pantalla.
-    backgroundColor: "white", //backgroundColor: "white": Fondo blanco para el botón.
-    borderRadius: 30, //borderRadius: 30: Hace que el botón sea circular.
-    width: wp("12%"), //width: wp("12%") y height: wp("12%"): Define el tamaño del botón como un 12% del ancho de la pantalla.
-    height: wp("12%"), //width: wp("12%") y height: wp("12%"): Define el tamaño del botón como un 12% del ancho de la pantalla.
-    justifyContent: "center", //justifyContent: "center" y alignItems: "center": Centra el ícono dentro del botón.
-    alignItems: "center", //justifyContent: "center" y alignItems: "center": Centra el ícono dentro del botón.
-    shadowColor: "#000", //shadowColor, shadowOffset, shadowOpacity, shadowRadius: Añade una sombra al botón.
+  mapTypeButton: { 
+    position: "absolute", 
+    top: hp("18%"), 
+    right: wp("4%"), 
+    backgroundColor: "white", 
+    borderRadius: 30, 
+    width: wp("12%"), 
+    height: wp("12%"), 
+    justifyContent: "center", 
+    alignItems: "center", 
+    shadowColor: "#000", 
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
-    elevation: 4, //elevation: 4: Añade una elevación (sombra) en Android.
+    elevation: 4, 
   },
-  panel: { // Estilo del panel de detalles de la ruta
-    position: "absolute", // Posiciona el panel de detalles de la ruta de manera absoluta en la pantalla.
-    bottom: 0, // Coloca el panel en la parte inferior de la pantalla.
-    left: 0, // Coloca el panel en la parte izquierda de la pantalla.
-    right: 0, // Coloca el panel en la parte derecha de la pantalla.
-    backgroundColor: "white", // Fondo blanco para el panel.
-    borderTopLeftRadius: 20, // Esquinas redondeadas en la parte superior izquierda.
-    borderTopRightRadius: 20, // Esquinas redondeadas en la parte superior derecha.
-    paddingHorizontal: wp("5%"), // Añade un relleno horizontal del 5% del ancho de la pantalla.
-    paddingBottom: hp("7%"), // Añade un relleno inferior del 7% de la altura de la pantalla.
-    shadowColor: "#000", // Añade una sombra al panel.
-    shadowOffset: { width: 0, height: -8 }, // Añade una sombra al panel.
-    shadowOpacity: 0.15, // Añade una sombra al panel.
-    shadowRadius: 8, // Añade una sombra al panel.
-    elevation: 12, // Añade una elevación (sombra) en Android.
-    zIndex: 10, // Añade una elevación (sombra) en Android.
-    height: hp("40%"), // 40% de la altura
+  panel: { 
+    position: "absolute", 
+    bottom: 0, 
+    left: 0, 
+    right: 0, 
+    backgroundColor: "white", 
+    borderTopLeftRadius: 20, 
+    borderTopRightRadius: 20, 
+    paddingHorizontal: wp("5%"), 
+    paddingBottom: hp("7%"), 
+    shadowColor: "#000", 
+    shadowOffset: { width: 0, height: -8 }, 
+    shadowOpacity: 0.15, 
+    shadowRadius: 8, 
+    elevation: 12, 
+    zIndex: 10, 
+    height: hp("40%"), 
   },
-  panelHandle: { // Estilo del manejador del panel
-    width: "100%", // Asegura que el manejador ocupe todo el ancho disponible.
-    alignItems: "center", // Centra el manejador horizontalmente.
-    paddingVertical: 5, // Añade un relleno vertical de 5 píxeles.
+  panelHandle: { 
+    width: "100%", 
+    alignItems: "center", 
+    paddingVertical: 5, 
   },
-  iconStyle: { // Estilo del ícono
-    marginRight: 2, // Espacio entre el ícono y el texto
+  iconStyle: { 
+    marginRight: 2, 
   },
-  textStyle: { // Estilo del texto
-    marginLeft: 2, // Espacio entre el ícono y el texto (alternativa)
+  textStyle: { 
+    marginLeft: 2, 
   },
 
-  routeSelectors: { // Estilo de los selectores de origen y destino
-    flexDirection: "row", // Alinea los selectores de origen y destino en una fila.
-    alignItems: "center", // Centra los elementos verticalmente.
-    paddingHorizontal: 12, // Añade un relleno horizontal de 12 píxeles.
-    marginVertical: 12, // Añade un margen vertical de 12 píxeles.
+  routeSelectors: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    paddingHorizontal: 12, 
+    marginVertical: 12, 
   },
-  locationSelector: { // Estilo del selector de ubicación
-    flex: 1, // Asegura que los selectores de origen y destino ocupen el mismo ancho.
-    flexDirection: "row", // Alinea el ícono y el texto en una fila.
-    alignItems: "center", // Centra los elementos verticalmente.
-    justifyContent: "center", // Centra los elementos horizontalmente.
-    backgroundColor: "#F8F8F8", // Fondo gris claro para los selectores.
-    padding: 12, // Añade un relleno de 12 píxeles.
-    borderRadius: 10, // Esquinas redondeadas de 10 píxeles.
-    marginHorizontal: -14, // Añade un margen horizontal de -14 píxeles.
+  locationSelector: { 
+    flex: 1, 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    backgroundColor: "#F8F8F8", 
+    padding: 12, 
+    borderRadius: 10, 
+    marginHorizontal: -14, 
   },
-  locationText: { // Estilo del texto de la ubicación
-    fontSize: 14, // Tamaño de fuente de 14 píxeles.
-    color: "#2d3436", // Color de texto oscuro.
-    fontWeight: "500", // Peso de fuente seminegrita.
-    textAlign: "center", // Centrar el texto
+  locationText: { 
+    fontSize: 14, 
+    color: "#2d3436", 
+    fontWeight: "500", 
+    textAlign: "center", 
   },
   swapButton: {
-    marginHorizontal: 18, // Añade un margen horizontal de 18 píxeles.
-    zIndex: 1, // Añade una elevación (sombra) en Android.
+    marginHorizontal: 18, 
+    zIndex: 1, 
   },
-  swapButtonInner: { // Estilo del botón de intercambio
-    backgroundColor: "#2ecc71", // Fondo verde para el botón de intercambio.
-    width: 40, // Ancho de 40 píxeles.
-    height: 40, // Alto de 40 píxeles.
-    borderRadius: 20, // Hace que el botón sea circular.
-    justifyContent: "center", // Centra el ícono verticalmente.
-    alignItems: "center", // Centra el ícono horizontalmente.
-    elevation: 2, // Añade una elevación (sombra) en Android.
-    shadowColor: "#000", // Añade una sombra al botón de intercambio.
-    shadowOffset: { width: 0, height: 2 }, // Añade una sombra al botón de intercambio.
-    shadowOpacity: 0.1, // Añade una sombra al botón de intercambio.
-    shadowRadius: 4, // Añade una sombra al botón de intercambio.
+  swapButtonInner: { 
+    backgroundColor: "#2ecc71", 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    justifyContent: "center", 
+    alignItems: "center", 
+    elevation: 2, 
+    shadowColor: "#000", 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 4, 
   },
-  routeDetails: { // Estilo de los detalles de la ruta
-    marginTop: -1, // Añade un margen superior de -1 píxel.
-    paddingHorizontal: 0, // Añade un relleno horizontal de 0 píxeles.
+  routeDetails: { 
+    marginTop: -1, 
+    paddingHorizontal: 0, 
   },
-  routeInfo: { // Estilo de la cuadrícula de información
-    justifyContent: "space-between", // Distribuye el espacio entre las tarjetas
+  routeInfo: { 
+    justifyContent: "space-between", 
   },
   routeInfoGrid: {
-    padding: 0, // Añade un relleno de 0 píxeles. 
+    padding: 0, 
   },
-  routeInfoContainer: { // Estilo del contenedor de información
-    backgroundColor: "white", // Fondo blanco para la cuadrícula de información.
-    borderRadius: 16, // Esquinas redondeadas de 16 píxeles.
-    marginHorizontal: 16, // Añade un margen horizontal de 16 píxeles.
-    marginVertical: 8, // Añade un margen vertical de 8 píxeles.
-    elevation: 3, // Añade una elevación (sombra) en Android.
-    shadowColor: "#000", // Añade una sombra a la cuadrícula de información.
-    shadowOffset: { width: 0, height: 2 }, // Añade una sombra a la cuadrícula de información.
-    shadowOpacity: 0.1, // Añade una sombra a la cuadrícula de información.
-    shadowRadius: 6, // Añade una sombra a la cuadrícula de información.
+  routeInfoContainer: { 
+    backgroundColor: "white", 
+    borderRadius: 16, 
+    marginHorizontal: 16, 
+    marginVertical: 8, 
+    elevation: 3, 
+    shadowColor: "#000", 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 6, 
   },
-  infoRow: { // Estilo de la fila de información
-    flexDirection: "row", // Alinea las tarjetas de información en una fila.
-    justifyContent: "space-between", // Distribuye el espacio entre las tarjetas
-    marginBottom: 16, // Añade un margen inferior de 16 píxeles.
-    paddingHorizontal: 0, // Añade un relleno horizontal de 0 píxeles.
-    width: "100%", // Asegura que la fila ocupe todo el ancho disponible
-    overflow: "visible", // Añadido
+  infoRow: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    marginBottom: 16, 
+    paddingHorizontal: 0, 
+    width: "100%", 
+    overflow: "visible", 
   },
-  infoItem: { // Estilo de la tarjeta de información
-    flexDirection: "row", // Alinea el ícono y el texto en una fila.
-    alignItems: "center", // Centra los elementos verticalmente.
+  infoItem: { 
+    flexDirection: "row", 
+    alignItems: "center", 
   },
-  infoText: { // Estilo del texto de información
-    marginLeft: 5, // Añade un margen izquierdo de 5 píxeles.
-    color: "#333", // Color de texto oscuro.
-    fontSize: 14, // Tamaño de fuente de 14 píxeles.
+  infoText: { 
+    marginLeft: 5, 
+    color: "#333", 
+    fontSize: 14, 
   },
-  infoCard: { // Estilo de la tarjeta de información
-    flex: 1, // Ocupa todo el espacio disponible
-    backgroundColor: "#f8f9fa", // Fondo gris claro
-    borderRadius: 12, // Esquinas redondeadas de 12 píxeles
-    padding: 14, // Añade un relleno de 14 píxeles
-    alignItems: "center", // Centra los elementos horizontalmente
-    justifyContent: "center", // Centra los elementos verticalmente
-    gap: 0, // Añadido
-    position: "relative", // Añadido
-    overflow: "visible", // Cambiado de 'hidden'
-    aspectRatio: 1, // Añadido
+  infoCard: { 
+    flex: 1, 
+    backgroundColor: "#f8f9fa", 
+    borderRadius: 12, 
+    padding: 14, 
+    alignItems: "center", 
+    justifyContent: "center", 
+    gap: 0, 
+    position: "relative", 
+    overflow: "visible", 
+    aspectRatio: 1, 
   },
-  infoValue: { // Estilo del valor de la información
-    fontSize: 16, // Tamaño de fuente de 16 píxeles
-    fontWeight: "600", // Peso de fuente seminegrita
-    color: "#2d3436", // Color de texto oscuro
+  infoValue: { 
+    fontSize: 16, 
+    fontWeight: "600", 
+    color: "#2d3436", 
   },
-  infoLabel: { // Estilo de la etiqueta de información
-    fontSize: 12, // Tamaño de fuente de 12 píxeles
-    color: "#636e72", // Color de texto gris
-    textAlign: "center", // Centrar el texto
-    lineHeight: 14, // Altura de línea de 14 píxeles
+  infoLabel: { 
+    fontSize: 12, 
+    color: "#636e72", 
+    textAlign: "center", 
+    lineHeight: 14, 
   },
-  actionButtons: { // Estilo de los botones de acción
-    flexDirection: "row", // Alinea los botones en una fila
-    justifyContent: "space-between", // Distribuye el espacio entre los botones
+  actionButtons: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
   },
-  actionButton: { // Estilo del botón de acción
-    flexDirection: "row", // Alinea el ícono y el texto en una fila
-    alignItems: "center", // Centra los elementos verticalmente
-    justifyContent: "center", // Centra los elementos horizontalmente
-    backgroundColor: "#F8F8F8", // Fondo gris claro para los botones
-    padding: 6, // Añade un relleno de 6 píxeles
-    borderRadius: 10, // Esquinas redondeadas de 10 píxeles
-    flex: 1, // Ocupa todo el espacio disponible
-    margin: 0, // Añade un margen de 0 píxeles
+  actionButton: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    backgroundColor: "#F8F8F8", 
+    padding: 6, 
+    borderRadius: 10, 
+    flex: 1, 
+    margin: 0, 
   },
-  primaryButton: { // Estilo del botón principal
-    backgroundColor: "#2ecc71", // Fondo verde para el botón principal
+  primaryButton: { 
+    backgroundColor: "#2ecc71", 
   },
-  buttonText: { // Estilo del texto del botón
-    marginLeft: 8, // Añade un margen izquierdo de 8 píxeles
-    color: "#FFF", // Color de texto blanco
-    fontSize: 14, // Tamaño de fuente de 14 píxeles
-    fontWeight: "500", // Peso de fuente seminegrita
+  buttonText: { 
+    marginLeft: 8, 
+    color: "#FFF", 
+    fontSize: 14, 
+    fontWeight: "500", 
   },
-  modalContainer: { // Estilo del contenedor del modal
-    flex: 1, // Ocupa todo el espacio disponible
-    justifyContent: "flex-end", // Alinea el contenido en la parte inferior
-    backgroundColor: "rgba(0,0,0,0.5)", // Fondo semitransparente
+  modalContainer: { 
+    flex: 1, 
+    justifyContent: "flex-end", 
+    backgroundColor: "rgba(0,0,0,0.5)", 
   },
-  modalContent: { // Estilo del contenido del modal
-    backgroundColor: "white", // Fondo blanco para el contenido del modal
-    borderTopLeftRadius: 20, // Esquinas redondeadas en la parte superior izquierda
-    borderTopRightRadius: 20, // Esquinas redondeadas en la parte superior derecha
-    paddingHorizontal: 20, // Añade un relleno horizontal de 20 píxeles
-    paddingBottom: 0, // Añade un relleno inferior de 0 píxeles
-    minHeight: hp("70%"), // 70% de la altura
+  modalContent: { 
+    backgroundColor: "white", 
+    borderTopLeftRadius: 20, 
+    borderTopRightRadius: 20, 
+    paddingHorizontal: 20, 
+    paddingBottom: 0, 
+    minHeight: hp("70%"), 
   },
-  modalHeader: { // Estilo del encabezado del modal
-    flexDirection: "row", // Alinea los elementos en una fila
-    justifyContent: "space-between", // Distribuye el espacio entre los elementos
-    alignItems: "center", // Centra los elementos verticalmente
-    paddingVertical: 15, // Añade un relleno vertical de 15 píxeles
+  modalHeader: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "center", 
+    paddingVertical: 15, 
   },
-  modalTitle: { // Estilo del título del modal
-    fontSize: 18, // Tamaño de fuente de 18 píxeles
-    fontWeight: "bold", // Peso de fuente en negrita
-    color: "#333", // Color de texto oscuro
-    textAlign: "center", // Centrar el texto
-    flex: 1, // Ocupa todo el espacio disponible
+  modalTitle: { 
+    fontSize: 18, 
+    fontWeight: "bold", 
+    color: "#333", 
+    textAlign: "center", 
+    flex: 1, 
   },
-  searchContainer: { // Estilo del contenedor de búsqueda
-    flexDirection: "row", // Alinea los elementos en una fila
-    alignItems: "center", // Centra los elementos verticalmente
-    backgroundColor: "#F5F5F5", // Fondo gris claro para el contenedor de búsqueda
-    paddingHorizontal: 15, // Añade un relleno horizontal de 15 píxeles
-    borderRadius: 10, // Esquinas redondeadas de 10 píxeles
-    marginBottom: 15, // Añade un margen inferior de 15 píxeles
+  searchContainer: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    backgroundColor: "#F5F5F5", 
+    paddingHorizontal: 15, 
+    borderRadius: 10, 
+    marginBottom: 15, 
   },
-  searchInput: { // Estilo del campo de búsqueda
-    flex: 1, // Ocupa todo el espacio disponible
-    paddingVertical: 10, // Añade un relleno vertical de 10 píxeles
-    marginLeft: 10, // Añade un margen izquierdo de 10 píxeles
+  searchInput: { 
+    flex: 1, 
+    paddingVertical: 10, 
+    marginLeft: 10, 
   },
-  sedeList: { // Estilo de la lista de sedes
-    flex: 1, // Ocupa todo el espacio disponible
+  sedeList: { 
+    flex: 1, 
   },
-  sedeItem: { // Estilo de cada elemento de la lista de sedes
-    flexDirection: "row", // Alinea los elementos en una fila
-    padding: 15, // Añade un relleno de 15 píxeles
-    borderBottomWidth: 1, // Añade un borde inferior de 1 píxel
-    borderBottomColor: "#F0F0F0", // Color de borde gris claro
+  sedeItem: { 
+    flexDirection: "row", 
+    padding: 15, 
+    borderBottomWidth: 1, 
+    borderBottomColor: "#F0F0F0", 
   },
-  sedeIconContainer: { // Contenedor del ícono de la sede
-    marginRight: 12, // Añade un margen derecho de 12 píxeles
+  sedeIconContainer: { 
+    marginRight: 12, 
   },
-  sedeInfoContainer: { // Contenedor de información de la sede
-    flex: 1, // Ocupa todo el espacio disponible
+  sedeInfoContainer: { 
+    flex: 1, 
   },
-  sedeName: { // Estilo del nombre de la sede
-    fontSize: hp("2%"), // Antes: 16
-    color: "#333", // Color de texto oscuro
-    fontWeight: "500", // Peso de fuente seminegrita
+  sedeName: { 
+    fontSize: hp("2%"), 
+    color: "#333", 
+    fontWeight: "500", 
   },
-  sedeAddress: { // Estilo de la dirección de la sede
-    fontSize: hp("1.8%"), // Antes: 14
-    color: "#666", // Color de texto gris
-    marginTop: hp("0.5%"), // Antes: 4
+  sedeAddress: { 
+    fontSize: hp("1.8%"), 
+    color: "#666", 
+    marginTop: hp("0.5%"), 
   },
-  selectorContent: { // Estilo del contenido del selector
-    flexDirection: "row", // Alinea los elementos en una fila
-    alignItems: "center", // Centra los elementos verticalmente
-    gap: 8, // Añade un espacio entre los elementos
+  selectorContent: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    gap: 8, 
   },
-  currentLocationMarker: { // Estilo del marcador de ubicación actual
-    alignItems: "center", // Centra los elementos horizontalmente
-    justifyContent: "center", // Centra los elementos verticalmente
+  currentLocationMarker: { 
+    alignItems: "center", 
+    justifyContent: "center", 
   },
-  currentLocationDot: { // Estilo del punto de ubicación actual
-    width: 14, // Ancho de 14 píxeles
-    height: 14, // Alto de 14 píxeles
-    borderRadius: 7, // Hace que el punto sea circular
-    backgroundColor: "#4285F4", // Color azul para el punto
-    borderWidth: 3, // Añade un borde de 3 píxeles
-    borderColor: "white", // Color de borde blanco
-    zIndex: 2, // Añade una elevación (sombra) en Android
+  currentLocationDot: { 
+    width: 14, 
+    height: 14, 
+    borderRadius: 7, 
+    backgroundColor: "#4285F4", 
+    borderWidth: 3, 
+    borderColor: "white", 
+    zIndex: 2, 
   },
-  currentLocationPulse: { // Estilo del pulso de ubicación actual
-    position: "absolute", // Posiciona el pulso de manera absoluta
-    width: 30, // Ancho de 30 píxeles
-    height: 30, // Alto de 30 píxeles
-    borderRadius: 15, // Hace que el pulso sea circular
-    backgroundColor: "rgba(66, 133, 244, 0.3)", // Color azul semitransparente
+  currentLocationPulse: { 
+    position: "absolute", 
+    width: 30, 
+    height: 30, 
+    borderRadius: 15, 
+    backgroundColor: "rgba(66, 133, 244, 0.3)", 
     zIndex: 1, 
   },
   placeholderText: {
@@ -2160,30 +2154,46 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   infoCardContent: {
-    alignItems: "center", //alignItems: "center" y justifyContent: "center": Centra el contenido.
+    alignItems: "center", 
     justifyContent: "center",
-    width: "125%", //"125%" y height: "130%": Aumenta el tamaño del contenido.
-    height: "130%", // Ocupa todo el espacio del contenedor padre
+    width: "125%", 
+    height: "130%", 
   },
   selectedCard: {
     backgroundColor: "#e8f5e9",
-    borderRadius: 8, // Aumentar el radio de borde // Hacer el borde más grueso
+    borderRadius: 8, 
     borderColor: "#2ecc71",
-    padding: 0, // Aumentar el espacio interno
-    // Añadir sombra para mayor profundidad
+    padding: 0, 
     shadowColor: "#2ecc71", 
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 3,
-    zIndex: 999, // Añadido para superposición
+    zIndex: 999, 
   },
 
   panelHandleBar: {
-    width: 50, //width: 50 y height: 6: Define el tamaño de la barra del manejador.
+    width: 50, 
     height: 6, 
-    backgroundColor: "#E0E0E0", //#E0E0E0": Color de fondo gris claro.
-    borderRadius: 2, //Redondea las esquinas de la barra.
+    backgroundColor: "#E0E0E0", 
+    borderRadius: 2, 
+  },
+  connectionBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#e74c3c',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    zIndex: 1000,
+  },
+  connectionText: {
+    color: 'white',
+    fontSize: 14,
+    marginLeft: 8,
   },
 });
 

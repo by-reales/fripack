@@ -1,13 +1,23 @@
 export const getWeatherApiKey = () => {
-  const parts = [
-    atob('MWViNWFl'),       // part1 (1eb5ae)
-    atob('NTg2NTNl'),       // part2 (58653e)
-    String.fromCharCode(52, 57, 49, 99, 98, 101),  // part3 (491cbe)
-    atob('YjE5Mjgz'),       // part4 (b19283)
-    '2251203'               // part5 (como string)
-  ];
-  
-  return parts.join('');
-
-  
+  return process.env.EXPO_PUBLIC_UV_API_KEY;
 };
+
+type Config = {
+  DEFAULT_CITY: any;
+  API_KEY: string;
+  WEATHER_BASE_URL: string;
+  WEATHERAPI_KEY: string;
+  WEATHERAPI_BASE_URL: string;
+};
+
+const config: Config = {
+  API_KEY: process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY || '',
+  WEATHER_BASE_URL: 'https://api.openweathermap.org/data/2.5/weather',
+  WEATHERAPI_KEY: process.env.EXPO_PUBLIC_UV_API_KEY || '',
+  WEATHERAPI_BASE_URL: 'https://api.weatherapi.com/v1',
+  DEFAULT_CITY: 'Barranquilla'
+};
+
+
+
+export default config;

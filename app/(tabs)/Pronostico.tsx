@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Alert } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import axios from 'axios';
 import Animated, { FadeIn, FadeInRight, FadeInUp } from 'react-native-reanimated';
-const API_KEY = '1eb5ae58653e491cbeb192832251203'; // Key de weatherapi.com
 const { width } = Dimensions.get('window');
+import config from '../../Config';
 
 interface ForecastDay {
   date: string;
@@ -47,24 +47,55 @@ export default function WeatherForecastScreen() {
   const [forecast, setForecast] = useState<ForecastDay[]>([]);
   const [current, setCurrent] = useState<CurrentWeather | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchWeatherData = async () => {
       try {
-        const response = await axios.get(
-          `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=Barranquilla&days=7&aqi=no&alerts=no`
-        );
+        setLoading(true);
         
+        const response = await axios.get(`${config.WEATHERAPI_BASE_URL}/forecast.json`, {
+          params: {
+            key: config.WEATHERAPI_KEY,
+            q: config.DEFAULT_CITY, 
+            days: 7,
+            aqi: 'no',
+            alerts: 'no'
+          }
+        });
+  
+        if (!response.data?.current || !response.data?.forecast?.forecastday) {
+          throw new Error('Estructura de datos inválida');
+        }
+  
         setCurrent(response.data.current);
         setForecast(response.data.forecast.forecastday);
+        setError(null);
+  
       } catch (error) {
-        console.error('Error fetching weather data:', error);
+        let errorMessage = 'Error desconocido';
+        
+        if (axios.isAxiosError(error)) {
+          errorMessage = error.response?.data?.error?.message || 
+                        `Error ${error.response?.status}: ${error.message}`;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        
+        console.error('Error fetching forecast:', error);
+        setError(errorMessage);
+        Alert.alert("Error en pronóstico", "No se pudo obtener datos futuros");
+  
       } finally {
         setLoading(false);
       }
     };
-
+  
+    const abortController = new AbortController(); 
+    
     fetchWeatherData();
+  
+    return () => abortController.abort(); 
   }, []);
 
   const getWeatherIcon = (condition: string): keyof typeof Ionicons.glyphMap => {

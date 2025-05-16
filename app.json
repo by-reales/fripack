@@ -45,11 +45,12 @@
     },
     "extra": {
       "API_KEY": "process.env.API_KEY",  
-      "WEATHER_API_KEY": "process.env.WEATHER_API_KEY",  
+      "WEATHER_API_KEY": "process.env.WEATHER_API_KEY", 
       "eas": {
         "projectId": "da9ebeea-b20e-4e52-8281-6db6efe7c893"
       }
     },
+    
     "plugins": [
       [
         "expo-location",

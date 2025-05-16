@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Text, ActivityIndicator } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import axios from 'axios';
-
-const API_KEY = '1eb5ae58653e491cbeb192832251203';
+import config from '../../Config';
 
 interface WeatherData {
   current: {
@@ -21,14 +20,42 @@ interface WeatherData {
 const Recomendaciones = () => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
 
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        const response = await axios.get(
-          `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=Barranquilla&aqi=no`
-        );
+        setLoading(true);
+        setError(null);
+        
+        const response = await axios.get(`${config.WEATHERAPI_BASE_URL}/current.json`, {
+          params: {
+            key: config.WEATHERAPI_KEY,
+            q: 'Barranquilla',
+            aqi: 'no'
+          }
+        });
+
+        if (!response.data?.current) {
+          throw new Error('Formato de respuesta inválido');
+        }
+
         setWeather(response.data);
+
+      } catch (error) {
+        let errorMessage = 'Error desconocido';
+        
+        if (axios.isAxiosError(error)) {
+          errorMessage = error.response?.data?.error?.message || error.message;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        
+        setError(errorMessage);
+        console.error("Error fetching weather:", error);
+        Alert.alert("Error", "No se pudo obtener los datos del clima");
+        
       } finally {
         setLoading(false);
       }
@@ -49,6 +76,12 @@ const Recomendaciones = () => {
 
   const { temp_c, uv, wind_kph, humidity, condition } = weather.current;
   const isRaining = condition.text.toLowerCase().includes('rain');
+
+  // Cálculo de delays para animaciones
+  const temperatureDelay = isRaining ? 300 : 200;
+  const uvDelay = isRaining ? 400 : 300;
+  const windDelay = isRaining ? 500 : 400;
+  const foodDelay = isRaining ? 600 : 500;
 
   // Clasificación de temperatura para Barranquilla
   const getTemperatureLevel = () => {
@@ -83,13 +116,29 @@ const Recomendaciones = () => {
 
   // Recomendaciones de alimentación
   const getFoodRecommendations = () => {
-    return [
+    const recommendations = [
       'Bebidas: agua de coco, limonada natural, mucha agua',
       'Frutas: sandía, melón, piña (hidratantes)',
       'Comidas ligeras: ensaladas, sopas frías',
       'Evita comidas pesadas y grasosas en horas de calor'
     ];
+    
+    if (isRaining) {
+      recommendations.push('Bebidas calientes: chocolate, café, té (en caso de lluvia)');
+      recommendations.push('Considera sopas o caldos para mantener el calor');
+    }
+    
+    return recommendations;
   };
+
+  // Recomendaciones específicas para lluvia
+  const getRainRecommendations = () => [
+    'Usa paraguas o impermeable al moverte por el campus',
+    'Evita zonas inundables como el estacionamiento de la biblioteca',
+    'Ten cuidado con los pisos mojados en pasillos y escaleras',
+    'Protege tus dispositivos electrónicos con fundas anti agua',
+    'Considera calzado cerrado e impermeable'
+  ];
 
   return (
     <View style={styles.container}>
@@ -111,8 +160,20 @@ const Recomendaciones = () => {
           </View>
         </Animated.View>
 
+        {/* Recomendaciones para lluvia */}
+        {isRaining && (
+          <Animated.View entering={FadeInRight.delay(200)} style={styles.card}>
+            <Text style={styles.sectionTitle}>
+              <Ionicons name="umbrella" size={20} color="#2ecc71" /> Lluvia
+            </Text>
+            {getRainRecommendations().map((item, i) => (
+              <Text key={`rain-${i}`} style={styles.listItem}>• {item}</Text>
+            ))}
+          </Animated.View>
+        )}
+
         {/* Temperatura */}
-        <Animated.View entering={FadeIn.delay(200)} style={styles.card}>
+        <Animated.View entering={FadeIn.delay(temperatureDelay)} style={styles.card}>
           <Text style={styles.sectionTitle}>
             <Ionicons name="thermometer" size={20} color="#2ecc71" /> Temperatura {getTemperatureLevel()}
           </Text>
@@ -132,7 +193,7 @@ const Recomendaciones = () => {
         </Animated.View>
 
         {/* Protección Solar */}
-        <Animated.View entering={FadeInRight.delay(300)} style={styles.card}>
+        <Animated.View entering={FadeInRight.delay(uvDelay)} style={styles.card}>
           <Text style={styles.sectionTitle}>
             <Ionicons name="sunny" size={20} color="#2ecc71" /> Protección UV
           </Text>
@@ -153,7 +214,7 @@ const Recomendaciones = () => {
         </Animated.View>
 
         {/* Viento */}
-        <Animated.View entering={FadeInRight.delay(400)} style={styles.card}>
+        <Animated.View entering={FadeInRight.delay(windDelay)} style={styles.card}>
           <Text style={styles.sectionTitle}>
             <Ionicons name="flag" size={20} color="#2ecc71" /> Viento {getWindCondition()}
           </Text>
@@ -170,7 +231,7 @@ const Recomendaciones = () => {
         </Animated.View>
 
         {/* Alimentación */}
-        <Animated.View entering={FadeInRight.delay(500)} style={styles.card}>
+        <Animated.View entering={FadeInRight.delay(foodDelay)} style={styles.card}>
           <Text style={styles.sectionTitle}>
             <Ionicons name="nutrition" size={20} color="#2ecc71" /> Alimentación
           </Text>
