@@ -1,5 +1,5 @@
 import React from "react";
-import {Animated,Dimensions,TouchableOpacity,View,Text,StyleSheet,Modal,TextInput,ScrollView,Alert,Linking,FlatList,PanResponder,} from "react-native";
+import {Animated,Dimensions,TouchableOpacity,View,Text,StyleSheet,Modal,TextInput,ScrollView,Alert,Linking,FlatList,PanResponder, BackHandler,} from "react-native";
 import MapView, { PROVIDER_GOOGLE, Marker, Polyline } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
@@ -231,7 +231,7 @@ export default function MapScreen() {
     checkConnection();
     
     const subscription = Network.addNetworkStateListener((state: Network.NetworkState) => {
-      const isConnected = state.isConnected ?? false; // Handle undefined case
+      const isConnected = state.isConnected ?? false; 
       setIsConnected(isConnected);
       if (!isConnected) {
         Alert.alert(
@@ -328,21 +328,31 @@ const fetchUVIndex = async (lat: number, lon: number) => {
     return "Extremo";
   };
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Error",
-          "Se requieren permisos de ubicación para la navegación"
-        );
-        return;
-      }
+useEffect(() => {
+  (async () => {
+    const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
+    
+    if (status !== "granted") {
+      Alert.alert(
+        "AVISO",
+        "Se requieren permisos de ubicación para la navegación",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Cierra la aplicación
+              BackHandler.exitApp();
+            }
+          }
+        ]
+      );
+      return;
+    }
 
-      setLocationPermissionGranted(true);
-      getCurrentLocation();
-    })();
-  }, []);
+    setLocationPermissionGranted(true);
+    getCurrentLocation();
+  })();
+}, []);
 
   const getCurrentLocation = async () => {
     try {
