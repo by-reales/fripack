@@ -346,7 +346,7 @@ useEffect(() => {
   };
 
   const fetchTemperature = async (lat: number, lon: number) => {
-    if (!isConnected) { // NUEVO: Bloqueo sin conexión
+    if (!isConnected) { 
       setTemperature(null);
       setWeather(null);
       setHumidity(null);
