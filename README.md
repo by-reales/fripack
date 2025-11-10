@@ -7,13 +7,10 @@ Frida is a powerful tool, but its size and the need for root access make it chal
 
 Fripack solves this by packaging your Frida scripts into various executable formats—such as Xposed Modules, Zygisk Modules, shared objects for `LD_PRELOAD`, or injectable DLLs—enabling easy distribution and use of Frida-based plugins.
 
----
 
 ## Installation
 
 Download the latest binary from the [releases page](https://github.com/std-microblock/fripack/releases/latest) and install it as needed.
-
----
 
 ## Getting Started
 

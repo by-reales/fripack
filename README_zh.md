@@ -5,13 +5,10 @@ Frida 是一个强大的工具，但其体积较大且通常需要 root 权限�
 
 Fripack 通过将你的 Frida 脚本打包成各种可执行格式来解决这个问题——例如 Xposed 模块、Zygisk 模块、用于 `LD_PRELOAD` 的动态共享库，或可注入的 DLL——使得基于 Frida 的插件能够轻松分发和使用。
 
----
-
 ## 安装
 
 从 [发布页面](https://github.com/std-microblock/fripack/releases/latest) 下载最新的二进制文件，并根据需要进行安装。
 
----
 
 ## 快速开始
 
