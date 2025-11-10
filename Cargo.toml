@@ -34,6 +34,8 @@ thiserror = "1.0"
 
 # Async runtime
 tokio = { version = "1.0", features = ["full"] }
+rand = "0.8"
+tempfile = "3.8"
 
 # Binary manipulation
 object = { git = "https://github.com/gimli-rs/object/", features = ["build", "write"] }

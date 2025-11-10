@@ -52,6 +52,20 @@ pub struct TargetConfig {
     
     /// Icon path (for Xposed modules)
     pub icon: Option<String>,
+    
+    /// Xposed scope (comma-separated package names)
+    pub scope: Option<String>,
+    
+    /// Xposed module description
+    pub description: Option<String>,
+
+    /// Keystore password (for Xposed modules)
+    #[serde(rename = "keystorePass")]
+    pub keystore_pass: Option<String>,
+
+    /// Keystore alias (for Xposed modules)
+    #[serde(rename = "keystoreAlias")]
+    pub keystore_alias: Option<String>,
 }
 
 impl FripackConfig {
@@ -73,6 +87,10 @@ impl FripackConfig {
             keystore: None,
             name: None,
             icon: None,
+            scope: None,
+            description: None,
+            keystore_pass: None,
+            keystore_alias: None,
         });
         
         // Example Xposed module
@@ -90,6 +108,10 @@ impl FripackConfig {
             keystore: Some("C:\\Users\\YourUser\\.android\\debug.keystore".to_string()),
             name: Some("My Xposed Module".to_string()),
             icon: Some("res\\icon.png".to_string()),
+            scope: Some("com.example.a;com.example.b".to_string()),
+            description: Some("Easy example which makes the status bar clock red and adds a smiley".to_string()),
+            keystore_pass: Some("android".to_string()),
+            keystore_alias: Some("androiddebugkey".to_string()),
         });
         
         // Example Android SO
@@ -107,6 +129,10 @@ impl FripackConfig {
             keystore: None,
             name: None,
             icon: None,
+            scope: None,
+            description: None,
+            keystore_pass: None,
+            keystore_alias: None,
         });
         
         Self { targets }
@@ -193,6 +219,18 @@ impl FripackConfig {
         if let Some(icon) = &target.icon {
             resolved.icon = Some(icon.clone());
         }
+        if let Some(scope) = &target.scope {
+            resolved.scope = Some(scope.clone());
+        }
+        if let Some(description) = &target.description {
+            resolved.description = Some(description.clone());
+        }
+        if let Some(keystore_pass) = &target.keystore_pass {
+            resolved.keystore_pass = Some(keystore_pass.clone());
+        }
+        if let Some(keystore_alias) = &target.keystore_alias {
+            resolved.keystore_alias = Some(keystore_alias.clone());
+        }
         
         processing.remove(name);
         resolved_targets.insert(name.to_string(), resolved);
@@ -218,6 +256,11 @@ pub struct ResolvedTarget {
     pub override_prebuild_file: Option<String>,
     pub package_name: Option<String>,
     pub keystore: Option<String>,
+    pub keystore_pass: Option<String>,
+    pub keystore_alias: Option<String>,
     pub name: Option<String>,
     pub icon: Option<String>,
+    pub scope: Option<String>,
+    pub description: Option<String>,
+    pub output_dir: Option<String>,
 }

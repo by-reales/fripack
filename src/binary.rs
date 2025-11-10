@@ -1,9 +1,4 @@
 use anyhow::{Context, Result};
-use byteorder::{ByteOrder, LittleEndian};
-use object::{
-    build::{self, elf::SectionData, ByteString},
-    elf, Object, ObjectSection,
-};
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct EmbeddedConfig {
@@ -84,47 +79,32 @@ impl BinaryProcessor {
         None
     }
 
-    fn add_embedded_config_data_section(&mut self, config_data: &[u8], use_xz: bool) -> Result<()> {
-        let final_data = if use_xz {
-            self.compress_xz(config_data)?
+    pub fn add_embedded_config_data(&mut self, config_data: &[u8], use_xz: bool) -> Result<()> {
+        let embedded_config_offset = self
+            .find_embedded_config()
+            .context("Could not find embedded config magic in binary")?;
+        let embedded_config = if use_xz {
+            let compressed_data = self.compress_xz(config_data)?;
+            let offset = self.data.len();
+            self.data.extend_from_slice(&compressed_data);
+            EmbeddedConfig::new(
+                compressed_data.len() as i32,
+                offset as i32,
+                use_xz,
+            )
         } else {
-            config_data.to_vec()
+            let offset = self.data.len();
+            self.data.extend_from_slice(config_data);
+            EmbeddedConfig::new(
+                config_data.len() as i32,
+                offset as i32,
+                use_xz,
+            )
         };
 
-        let data_cloned = self.data.clone();
-        let mut binary = object::build::elf::Builder::read(data_cloned.as_slice())?;
-        let new_section = binary.sections.add();
-        new_section.data = SectionData::Data(final_data.into());
-        new_section.sh_flags = elf::SHF_ALLOC as u64 | elf::SHF_EXECINSTR as u64;
-        new_section.sh_type = elf::SHT_PROGBITS;
-        new_section.name = ByteString::from(".fripack_config");
-        new_section.sh_offset = self.data.len() as u64 + 1;
-
-        self.data = vec![];
-        binary.write(&mut self.data)?;
-        Ok(())
-    }
-
-    pub fn add_embedded_config_data(&mut self, config_data: &[u8], use_xz: bool) -> Result<()> {
-        self.add_embedded_config_data_section(config_data, use_xz)?;
-        let file = object::File::parse(self.data.as_slice())?;
-        // search for the embedded config and update it
-        let offset = self
-            .find_embedded_config()
-            .context("Cannot found embedded config")?;
-        
-        let embedded_config = EmbeddedConfig::new(
-            config_data.len() as i32,
-            file.section_by_name(".fripack_config")
-                .context("Cannot find .fripack_config section")?
-                .file_range()
-                .context("Cannot get file range of .fripack_config section")?
-                .0 as i32 - offset as i32,
-            use_xz,
-        );
-
         let embedded_config_bytes = embedded_config.as_bytes();
-        self.data[offset..offset + embedded_config_bytes.len()]
+
+        self.data[embedded_config_offset..embedded_config_offset + embedded_config_bytes.len()]
             .copy_from_slice(&embedded_config_bytes);
 
         Ok(())
