@@ -45,6 +45,8 @@ impl FripackConfig {
                 keystore_alias: None,
                 sign: None,
                 output_dir: None,
+                before_build: None,
+                after_build: None,
             },
         );
 
@@ -74,6 +76,8 @@ impl FripackConfig {
                 keystore_alias: Some("androiddebugkey".to_string()),
                 sign: Some(true),
                 output_dir: None,
+                before_build: None,
+                after_build: None,
             },
         );
 
@@ -100,6 +104,8 @@ impl FripackConfig {
                 keystore_alias: None,
                 sign: None,
                 output_dir: None,
+                before_build: None,
+                after_build: None,
             },
         );
 
@@ -193,6 +199,10 @@ pub struct TargetConfig {
     pub description: Option<String>,
     #[serde(rename = "outputDir")]
     pub output_dir: Option<String>,
+    #[serde(rename = "beforeBuild")]
+    pub before_build: Option<String>,
+    #[serde(rename = "afterBuild")]
+    pub after_build: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -309,6 +319,8 @@ pub struct ResolvedTarget {
     pub scope: Option<String>,
     pub description: Option<String>,
     pub output_dir: Option<String>,
+    pub before_build: Option<String>,
+    pub after_build: Option<String>,
 }
 
 impl ResolvedTarget {
@@ -332,7 +344,9 @@ impl ResolvedTarget {
             keystore_pass,
             keystore_alias,
             sign,
-            output_dir
+            output_dir,
+            before_build,
+            after_build
         );
 
         if let Some(platform_str) = &other.platform {

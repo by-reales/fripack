@@ -23,6 +23,7 @@
         "inherit": "base",
         "type": "shared",
         "platform": "windows-x64",
-        
+        "beforeBuild": "echo Building for Windows x64...",
+        "afterBuild": "echo Build completed for Windows x64!",
     }
 }

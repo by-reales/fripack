@@ -32,7 +32,12 @@ impl Builder {
     }
 
     pub async fn build_target(&mut self, target_name: &str, target: &ResolvedTarget) -> Result<()> {
-        match target.target_type.as_deref() {
+        // Run beforeBuild hook
+        if let Some(cmd) = &target.before_build {
+            self.run_hook(cmd).await?;
+        }
+
+        let build_result = match target.target_type.as_deref() {
             Some("shared") => self.build_shared(target_name, target).await,
             Some("xposed") => self.build_xposed(target_name, target).await,
             Some(other) => anyhow::bail!("Unsupported target type: {other}"),
@@ -40,7 +45,34 @@ impl Builder {
                 warn!("Target type not specified for target: {target_name}, skipping...");
                 Ok(())
             }
+        };
+
+        // Run afterBuild hook if build succeeded
+        if build_result.is_ok() {
+            if let Some(cmd) = &target.after_build {
+                self.run_hook(cmd).await?;
+            }
         }
+
+        build_result
+    }
+
+    async fn run_hook(&self, cmd: &str) -> Result<()> {
+        info!("→ Running build hook: {}", cmd);
+        let output = if cfg!(target_os = "windows") {
+            Command::new("cmd").arg("/C").arg(cmd).output().await
+        } else {
+            Command::new("sh").arg("-c").arg(cmd).output().await
+        }?;
+
+        if !output.status.success() {
+            anyhow::bail!(
+                "Build hook failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        Ok(())
     }
 
     async fn generate_binary(&mut self, target: &ResolvedTarget) -> Result<Vec<u8>> {

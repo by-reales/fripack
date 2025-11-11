@@ -61,6 +61,8 @@ fripack build xposed
 - `version`: 你的插件版本。
 - `type`: 目标类型（定义了输出格式）。
 - `inherit`: 要继承配置的另一个目标的键名。
+- `beforeBuild` (可选): 在构建目标之前执行的命令。
+- `afterBuild` (可选): 在成功构建目标之后执行的命令。
 
 使用继承来避免重复配置的示例：
 
