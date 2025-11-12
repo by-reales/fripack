@@ -50,6 +50,18 @@ pub struct XposedConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ZygiskConfig {
+    pub id: Option<String>,
+    pub name: Option<String>,
+    pub version: Option<String>,
+    #[serde(rename = "versionCode")]
+    pub version_code: Option<i32>,
+    pub author: Option<String>,
+    pub description: Option<String>,
+    pub scope: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FripackConfig {
     #[serde(flatten)]
     pub targets: HashMap<String, TargetConfig>,
@@ -79,6 +91,7 @@ impl FripackConfig {
                 after_build: None,
                 inject_apk: None,
                 xposed: None,
+                zygisk: None,
             },
         );
 
@@ -115,6 +128,7 @@ impl FripackConfig {
                             .to_string(),
                     ),
                 }),
+                zygisk: None,
             },
         );
 
@@ -138,6 +152,7 @@ impl FripackConfig {
                 after_build: None,
                 inject_apk: None,
                 xposed: None,
+                zygisk: None,
             },
         );
 
@@ -165,11 +180,44 @@ impl FripackConfig {
                     target_lib: Some("libnative-lib.so".to_string()),
                 }),
                 xposed: None,
+                zygisk: None,
                 sign: Some(SignConfig {
                     keystore: "C:\\Users\\YourUser\\.android\\debug.keystore".to_string(),
                     keystore_pass: "android".to_string(),
                     keystore_alias: "androiddebugkey".to_string(),
                 }),
+            },
+        );
+
+        // Example Zygisk module
+        targets.insert(
+            "example-zygisk".to_string(),
+            TargetConfig {
+                inherit: None,
+                target_type: Some("zygisk".to_string()),
+                platform: Some("arm64-v8a".to_string()),
+                version: Some("1.0.0".to_string()),
+                frida_version: Some("17.5.1".to_string()),
+                mode: Some("embedjs".to_string()),
+                entry: Some("main.js".to_string()),
+                xz: Some(false),
+                override_prebuild_file: None,
+                output_dir: None,
+                target_base_name: None,
+                before_build: None,
+                after_build: None,
+                inject_apk: None,
+                xposed: None,
+                zygisk: Some(ZygiskConfig {
+                    id: Some("myzygiskmodule".to_string()),
+                    name: Some("My Zygisk Module".to_string()),
+                    version: Some("v1.0".to_string()),
+                    version_code: Some(1),
+                    author: Some("YourName".to_string()),
+                    description: Some("A minimal Zygisk module".to_string()),
+                    scope: Some("com.example.app1;com.example.app2".to_string()),
+                }),
+                sign: None,
             },
         );
 
@@ -261,6 +309,7 @@ pub struct TargetConfig {
     #[serde(rename = "injectApk")]
     pub inject_apk: Option<InjectApkConfig>,
     pub xposed: Option<XposedConfig>,
+    pub zygisk: Option<ZygiskConfig>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -374,6 +423,7 @@ pub struct ResolvedTarget {
     pub after_build: Option<String>,
     pub inject_apk: Option<InjectApkConfig>,
     pub xposed: Option<XposedConfig>,
+    pub zygisk: Option<ZygiskConfig>,
 }
 
 impl ResolvedTarget {
@@ -394,7 +444,8 @@ impl ResolvedTarget {
             before_build,
             after_build,
             inject_apk,
-            xposed
+            xposed,
+            zygisk
         );
 
         if let Some(platform_str) = &other.platform {

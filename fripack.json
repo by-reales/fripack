@@ -51,6 +51,16 @@
         "type": "shared",
         "platform": "windows-x64",
     },
+    "zygisk": {
+        "inherit": "base",
+        "type": "zygisk",
+        "platform": "android-arm64",
+        "zygisk": {
+            "id": "com.fripack.examplezygiskmodule",
+            "name": "Fripack Zygisk Module Example",
+            "scope": "com.yunzhi.tiyu;com.hypergryph.skland"
+        },
+    },
     // "inject-apk": {
     //     "inherit": "base",
     //     "type": "inject-apk",

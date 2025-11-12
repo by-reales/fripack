@@ -159,6 +159,61 @@ impl Downloader {
         )
     }
 
+    pub async fn download_zygisk_loader(&self, abi: &str) -> Result<Vec<u8>> {
+        let loader_filename = format!("fripack-inject-zygisk-loader-{}.so", abi);
+
+        // Check cache first
+        let cache_dir = self.cache_dir.join("zygisk");
+        if !cache_dir.exists() {
+            fs::create_dir_all(&cache_dir).await?;
+        }
+        let cached_path = cache_dir.join(&loader_filename);
+
+        if cached_path.exists() {
+            info!("→ Using cached zygisk loader: {}", cached_path.display());
+            return Ok(fs::read(&cached_path).await?);
+        }
+        
+        let latest_release = self
+            .client
+            .get("https://api.github.com/repos/FriRebuild/fripack-zygisk-loader/releases/latest")
+            .header("User-Agent", "fripack-downloader")
+            .send()
+            .await?
+            .json::<serde_json::Value>()
+            .await?
+            .get("tag_name")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("Failed to get latest release tag"))?
+            .to_string();
+
+        let loader_url = format!(
+            "https://github.com/FriRebuild/fripack-zygisk-loader/releases/download/{}/{}",
+            latest_release, loader_filename
+        );
+
+        // Download the file
+        info!(
+            "→ Downloading zygisk loader for {}: {}",
+            abi, loader_filename
+        );
+        let response = self.client.get(&loader_url).send().await?;
+
+        if !response.status().is_success() {
+            anyhow::bail!(
+                "Failed to download zygisk loader for {}: {}",
+                abi,
+                response.status()
+            );
+        }
+
+        let loader_data = response.bytes().await?;
+        fs::write(&cached_path, &loader_data).await?;
+        info!("→ Downloaded and cached zygisk loader for {}", abi);
+
+        Ok(loader_data.to_vec())
+    }
+
     pub async fn download_prebuilt_file(
         &self,
         platform: &PlatformConfig,

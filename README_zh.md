@@ -191,6 +191,42 @@ fripack build xposed
 }
 ```
 
+#### `zygisk`
+
+将你的 Frida 脚本构建成一个用于 Magisk 的 Zygisk 模块。仅支持 `Android` 平台。
+
+**额外选项：**
+
+- `zygisk` (必需): Zygisk 配置对象。
+  - `id` (必须): 模块 ID
+  - `name` (必须): 模块显示名称
+  - `version` (可选): 模块版本（默认为 "1.0"）。
+  - `versionCode` (可选): 模块版本代码（默认为 1）。
+  - `author` (可选): 模块作者（默认为 "FriPack"）。
+  - `description` (可选): 模块描述。
+  - `scope` (必须): 注入的目标应用程序，用分号分隔。
+
+**配置示例：**
+```json
+{
+    "zygisk": {
+        "type": "zygisk",
+        "platform": "android-arm64",
+        "fridaVersion": "17.5.1",
+        "entry": "main.js",
+        "zygisk": {
+            "id": "com.example.myzygiskmodule",
+            "name": "我的 Zygisk 模块",
+            "version": "1.0.0",
+            "versionCode": 1,
+            "author": "你的名字",
+            "description": "一个注入 Frida 脚本的 Zygisk 模块",
+            "scope": "com.example.app1;com.example.app2"
+        }
+    }
+}
+```
+
 ---
 
 ## 注意事项

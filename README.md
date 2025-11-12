@@ -188,6 +188,42 @@ It's also recommended to have [`zipalign`](https://developer.android.com/tools/z
 }
 ```
 
+#### `zygisk`
+
+Builds your Frida script into a Zygisk module for Magisk. Only supports `Android` platforms.
+
+**Additional options:**
+
+- `zygisk` (required): Zygisk configuration object.
+  - `id` (required): Module ID
+  - `name` (required): Module display name
+  - `version` (optional): Module version (defaults to "1.0").
+  - `versionCode` (optional): Module version code (defaults to 1).
+  - `author` (optional): Module author (defaults to "FriPack").
+  - `description` (optional): Module description.
+  - `scope` (required): Target applications for injection, separated by semicolons.
+
+**Example configuration:**
+```json
+{
+    "zygisk": {
+        "type": "zygisk",
+        "platform": "android-arm64",
+        "fridaVersion": "17.5.1",
+        "entry": "main.js",
+        "zygisk": {
+            "id": "com.example.myzygiskmodule",
+            "name": "My Zygisk Module",
+            "version": "1.0.0",
+            "versionCode": 1,
+            "author": "Your Name",
+            "description": "A Zygisk module that injects Frida scripts",
+            "scope": "com.example.app1;com.example.app2"
+        }
+    }
+}
+```
+
 ---
 
 ## Notes

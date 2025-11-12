@@ -42,6 +42,7 @@ impl Builder {
             Some("shared") => self.build_shared(target_name, target).await,
             Some("xposed") => self.build_xposed(target_name, target).await,
             Some("inject-apk") => self.build_inject_apk(target_name, target).await,
+            Some("zygisk") => self.build_zygisk(target_name, target).await,
             Some(other) => anyhow::bail!("Unsupported target type: {other}"),
             None => {
                 warn!("Target type not specified for target: {target_name}, skipping...");
@@ -673,6 +674,102 @@ doNotCompress:
             "✓ Successfully built inject APK: {}",
             final_apk_path.display()
         );
+        Ok(())
+    }
+
+    async fn build_zygisk(&mut self, target_name: &str, target: &ResolvedTarget) -> Result<()> {
+        let base_name = target.target_base_name.as_deref().unwrap_or(target_name);
+        info!("→ Building Zygisk target: {target_name} (base name: {base_name})");
+
+        // Get required fields
+        let platform = target
+            .platform
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Missing required field: platform"))?;
+        let zygisk_config = target
+            .zygisk
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Missing required field: zygisk"))?;
+
+        let scope = zygisk_config
+            .scope
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Missing required field: zygisk.scope"))?;
+
+        let id = zygisk_config
+            .id
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Missing required field: zygisk.id"))?;
+
+        let name = zygisk_config
+            .name
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Missing required field: zygisk.name"))?;
+
+        if platform.platform != Platform::Android {
+            anyhow::bail!("Zygisk target only supports Android platform");
+        }
+
+        let output_dir = target.output_dir.as_deref().unwrap_or("./fripack");
+        let binary_data = self.generate_binary(target).await?;
+
+        // Create the final zip file directly
+        let zip_filename = format!("{}-zygisk-{}.zip", base_name, platform);
+        let zip_path = Path::new(output_dir).join(&zip_filename);
+        std::fs::create_dir_all(output_dir)?;
+
+        // Create zip file
+        info!("→ Creating zygisk module zip: {}", zip_path.display());
+        let zip_file = std::fs::File::create(&zip_path)?;
+        let mut zip = zip::ZipWriter::new(zip_file);
+        let options = zip::write::FileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated)
+            .unix_permissions(0o755);
+
+        use std::io::Write;
+
+        // Add fripack/inject.so
+        zip.start_file("fripack/inject.so", options)?;
+        zip.write_all(&binary_data)?;
+
+        // Add fripack/scope
+        let scope_content = scope
+            .split(';')
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n");
+        zip.start_file("fripack/scope", options)?;
+        zip.write_all(scope_content.as_bytes())?;
+
+        // Add module.prop
+        let module_prop_content = format!(
+            "id={}\nname={}\nversion={}\nversionCode={}\nauthor={}\ndescription={}\n",
+            id,
+            name,
+            zygisk_config.version.as_deref().unwrap_or("1.0"),
+            zygisk_config.version_code.unwrap_or(1),
+            zygisk_config.author.as_deref().unwrap_or("FriPack"),
+            zygisk_config
+                .description
+                .as_deref()
+                .unwrap_or("A Zygisk module created by FriPack")
+        );
+        zip.start_file("module.prop", options)?;
+        zip.write_all(module_prop_content.as_bytes())?;
+
+        zip.start_file(&format!("zygisk/{}.so", platform.android_abi()?), options)?;
+        let downloaded = self
+            .downloader
+            .download_zygisk_loader(&platform.android_abi()?)
+            .await?;
+
+        zip.write_all(&downloaded)?;
+
+        zip.finish()?;
+
+        info!("✓ Successfully built zygisk module: {}", zip_path.display());
+
         Ok(())
     }
 
