@@ -324,7 +324,7 @@ async fn update_target(
 fn update_watcher_targets(
     watcher: &mut notify_debouncer_full::Debouncer<
         notify_debouncer_full::notify::RecommendedWatcher,
-        notify_debouncer_full::FileIdMap,
+        notify_debouncer_full::RecommendedCache,
     >,
     target_config: &config::ResolvedTarget,
 ) -> Result<()> {
@@ -363,10 +363,7 @@ async fn watch_target(target: String) -> Result<()> {
     };
 
     let target_config = Arc::new(Mutex::new(resolved_config.targets[&target].clone()));
-    let mut watcher: notify_debouncer_full::Debouncer<
-        notify_debouncer_full::notify::RecommendedWatcher,
-        notify_debouncer_full::FileIdMap,
-    > = notify_debouncer_full::new_debouncer(
+    let mut watcher = notify_debouncer_full::new_debouncer(
         Duration::from_millis(500),
         None,
         move |res: DebounceEventResult| {

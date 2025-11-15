@@ -86,8 +86,8 @@ The following options are available for all target types:
 - `targetBaseName` (optional): Base name for output files (defaults to target key).
 - `beforeBuild` (optional): Command to execute before building the target.
 - `afterBuild` (optional): Command to execute after successfully building the target.
-- `watchPath` (required for `watchpath` mode): Directory to watch for file changes.
-- `pushPath` (required for `watchpath` mode): Destination path on device for pushing JavaScript files when in `watch` mode.
+- `watchPath` Additional directory to watch for file changes.
+- `pushPath` : Destination path on device for pushing JavaScript files when in `watch` mode. Default to `/data/local/tmp/fripack_dev.js`.
 
 Example using inheritance to avoid repetition:
 

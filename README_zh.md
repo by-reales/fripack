@@ -87,8 +87,8 @@ fripack watch xposed
 - `targetBaseName` (可选): 输出文件的基础名称（默认为目标键名）。
 - `beforeBuild` (可选): 在构建目标之前执行的命令。
 - `afterBuild` (可选): 在成功构建目标之后执行的命令。
-- `watchPath` (watchpath 模式必需): 监听文件变化的目录。
-- `pushPath` (watch 模式必需): 在 watch 模式下推送 JavaScript 文件到设备的目标路径。
+- `watchPath` 额外监听文件变化的目录。
+- `pushPath` : 在 watch 模式下推送 JavaScript 文件到设备的目标路径。默认为 `/data/local/tmp/fripack_dev.js`。
 
 使用继承来避免重复配置的示例：
 
