@@ -1,1 +1,1 @@
-console.log("Hello, FriPack!", Interceptor);
+console.log("Hello, FriPack! Process: ", Process.mainModule.name);

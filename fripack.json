@@ -23,7 +23,7 @@
             "keystoreAlias": "androiddebugkey"
         },
         "afterBuild": "adb install fripack/fripack-android-arm64.apk",
-        "overridePrebuildFile": "E:\\fripack\\build\\fripack-inject\\build\\android\\arm64-v8a\\release\\libfripack-inject.so",
+        // "overridePrebuildFile": "E:\\fripack\\build\\fripack-inject\\build\\android\\arm64-v8a\\debug\\libfripack-inject.so",
     },
     "xp-arm32": {
         "inherit": "xp",
@@ -65,7 +65,7 @@
         "zygisk": {
             "id": "com.fripack.examplezygiskmodule",
             "name": "Fripack Zygisk Module Example",
-            "scope": "com.yunzhi.tiyu;com.hypergryph.skland;com.hypergryph.arknights",
+            "scope": "com.yunzhi.tiyu;com.hypergryph.skland;com.hypergryph.arknights;com.qihoo.zhinao",
         },
     },
     // "inject-apk": {

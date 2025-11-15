@@ -331,7 +331,9 @@ impl BinaryProcessor {
                 kwd("GMain"),
                 kwd("solist"),
                 kwd("GLib-GIO"),
-                kwd("GLib")
+                kwd("GLib"),
+                kwd("agent"),
+                kwd("_Worker")
             ];
 
             for (keyword_bytes, replacement_str) in &keywords {
@@ -344,7 +346,6 @@ impl BinaryProcessor {
                         && !dynstr_section_range.contains(&(pos + offset))
                     {
                         pos += offset + keyword_bytes.len();
-                        info!("Skipped replacement at position {}", pos);
                         continue;
                     }
 
