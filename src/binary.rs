@@ -342,8 +342,7 @@ impl BinaryProcessor {
                 // Use a sliding window approach with memchr for faster searching
                 let mut pos = 0;
                 while let Some(offset) = memchr::memmem::find(&self.data[pos..], keyword_bytes) {
-                    if !rodata_section_range.contains(&(pos + offset))
-                        && !dynstr_section_range.contains(&(pos + offset))
+                    if !dynstr_section_range.contains(&(pos + offset))
                     {
                         pos += offset + keyword_bytes.len();
                         continue;
