@@ -266,10 +266,10 @@ async fn rebuild_install_target(
     target: &str,
     target_config: &config::ResolvedTarget,
 ) -> Result<()> {
-    if target_config.target_type.as_deref() == Some("xposed") {
-        let mut builder = Builder::new();
-        let output_path = builder.build_target(&target, target_config).await?.unwrap();
+    let mut builder = Builder::new();
+    let output_path = builder.build_target(&target, target_config).await?.unwrap();
 
+    if target_config.target_type.as_deref() == Some("xposed") {
         info!("→ Installing APK to device...");
         let output = tokio::process::Command::new("adb")
             .arg("install")
