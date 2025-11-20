@@ -333,7 +333,26 @@ impl BinaryProcessor {
                 kwd("GLib-GIO"),
                 kwd("GLib"),
                 kwd("agent"),
-                kwd("_Worker")
+                kwd("_Worker"),
+            ];
+
+            let keywords_rodata = [
+                "frida",
+                "GMainLoop",
+                "gum-js-loop",
+                "gmain",
+                "gum-js",
+                "gdbus",
+                "Frida",
+                "GDBus",
+                "g_dbus",
+                "g_main",
+                "GMain",
+                "solist",
+                "GLib-GIO",
+                "GLib",
+                "agent",
+                "_Worker",
             ];
 
             for (keyword_bytes, replacement_str) in &keywords {
@@ -343,6 +362,9 @@ impl BinaryProcessor {
                 let mut pos = 0;
                 while let Some(offset) = memchr::memmem::find(&self.data[pos..], keyword_bytes) {
                     if !dynstr_section_range.contains(&(pos + offset))
+                        && !(rodata_section_range.contains(&(pos + offset))
+                            && keywords_rodata
+                                .contains(&std::str::from_utf8(keyword_bytes).unwrap()))
                     {
                         pos += offset + keyword_bytes.len();
                         continue;

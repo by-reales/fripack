@@ -271,7 +271,7 @@ async fn rebuild_install_target(
 
     if target_config.target_type.as_deref() == Some("xposed") {
         info!("→ Installing APK to device...");
-        let output = tokio::process::Command::new("adb")
+        let output = tokio::process::Command::new(which::which("adb")?)
             .arg("install")
             .arg(&output_path)
             .output()
@@ -301,7 +301,7 @@ async fn update_target(
     let entry = target_config.entry.as_ref().unwrap();
     if Path::new(entry).exists() && target_config.platform.as_ref().unwrap().platform == Platform::Android {
         info!("→ Pushing JS file to device...");
-        let output = tokio::process::Command::new("adb")
+        let output = tokio::process::Command::new(which::which("adb")?)
             .arg("push")
             .arg(entry)
             .arg(&target_config.push_path.as_ref().unwrap())

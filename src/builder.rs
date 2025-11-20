@@ -6,7 +6,7 @@ use log::{info, warn};
 use rand::Rng;
 use std::path::{Path, PathBuf};
 use tokio::{fs, process::Command};
-
+use which::which;
 pub struct Builder {
     downloader: Downloader,
 }
@@ -410,7 +410,7 @@ doNotCompress:
 
         // 11. Build the APK using apktool b.
         info!("→ Building APK with apktool b...");
-        let output = tokio::process::Command::new("apktool")
+        let output = tokio::process::Command::new(which::which("apktool")?)
             .arg("b")
             .arg(temp_path.to_str().unwrap())
             .arg("-o")
@@ -439,14 +439,7 @@ doNotCompress:
             let keystore_pass = &sign_config.keystore_pass;
             let keystore_alias = &sign_config.keystore_alias;
 
-            let mut command = if cfg!(target_os = "windows") {
-                let mut cmd = Command::new("cmd");
-                cmd.arg("/C");
-                cmd.arg("apksigner");
-                cmd
-            } else {
-                Command::new("apksigner")
-            };
+            let mut command = Command::new(which::which("apksigner")?);
             command
                 .arg("sign")
                 .arg("--ks")
@@ -538,7 +531,7 @@ doNotCompress:
         // Decompile APK using apktool
         let decompiled_dir = temp_path.join("decompiled");
         info!("→ Decompiling APK with apktool...");
-        let output = tokio::process::Command::new("apktool")
+        let output = tokio::process::Command::new(which::which("apktool")?)
             .arg("d")
             .arg("-f")
             .arg("-r")
@@ -610,7 +603,7 @@ doNotCompress:
         // Rebuild APK using apktool
         info!("→ Rebuilding APK with apktool...");
         let rebuilt_apk_path = decompiled_dir.join("dist").join("app-debug.apk");
-        let output = tokio::process::Command::new("apktool")
+        let output = tokio::process::Command::new(which::which("apktool")?)
             .arg("b")
             .arg(&decompiled_dir)
             .arg("-o")
@@ -629,7 +622,7 @@ doNotCompress:
         // Run zipalign on the rebuilt APK
         info!("→ Aligning APK with zipalign...");
         let aligned_apk_path = temp_path.join(format!("{base_name}-{platform}-aligned.apk"));
-        let output = tokio::process::Command::new("zipalign")
+        let output = tokio::process::Command::new(which::which("zipalign")?)
             .arg("-v")
             .arg("-p")
             .arg("4")
@@ -658,14 +651,7 @@ doNotCompress:
             info!("→ Signing APK...");
             let signed_apk_path = temp_path.join(format!("{base_name}-{platform}-signed.apk"));
 
-            let mut command = if cfg!(target_os = "windows") {
-                let mut cmd = Command::new("cmd");
-                cmd.arg("/C");
-                cmd.arg("apksigner");
-                cmd
-            } else {
-                Command::new("apksigner")
-            };
+            let mut command = Command::new(which::which("apksigner")?);
 
             let output = command
                 .arg("sign")
@@ -812,7 +798,7 @@ doNotCompress:
 
         // Get APK path from device
         info!("→ Getting APK path from device...");
-        let output = tokio::process::Command::new("adb")
+        let output = tokio::process::Command::new(which::which("adb")?)
             .arg("shell")
             .arg("pm")
             .arg("path")
@@ -839,7 +825,7 @@ doNotCompress:
 
         // Pull APK from device
         info!("→ Pulling APK from device: {}", device_apk_path);
-        let output = tokio::process::Command::new("adb")
+        let output = tokio::process::Command::new(which::which("adb")?)
             .arg("pull")
             .arg(device_apk_path)
             .arg(&cached_apk_path)
