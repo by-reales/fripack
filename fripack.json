@@ -3,7 +3,7 @@
         "version": "1.0.0",
         "fridaVersion": "17.5.1",
         "mode": "embedjs",
-        "entry": "main.js",
+        "entry": "main_compiled.js",
         "xz": true,
         "outputDir": "./fripack",
         "targetBaseName": "fripack"
@@ -11,7 +11,6 @@
     "xp": {
         "inherit": "base",
         "type": "xposed",
-        "mode": "watchpath",
         "platform": "android-arm64",
         "xposed": {
             "packageName": "com.fripack.examplexposedmodule",
@@ -24,7 +23,7 @@
             "keystoreAlias": "androiddebugkey"
         },
         // "afterBuild": "adb install fripack/fripack-android-arm64.apk",
-        "overridePrebuildFile": "E:\\fripack\\build\\fripack-inject\\build\\android\\arm64-v8a\\debug\\libfripack-inject.so",
+        // "overridePrebuildFile": "E:\\fripack\\build\\fripack-inject\\build\\android\\arm64-v8a\\debug\\libfripack-inject.so",
     },
     "xp-arm32": {
         "inherit": "xp",
@@ -66,7 +65,7 @@
         "zygisk": {
             "id": "com.fripack.examplezygiskmodule",
             "name": "Fripack Zygisk Module Example",
-            "scope": "com.yunzhi.tiyu;com.hypergryph.skland;com.hypergryph.arknights;com.qihoo.zhinao",
+            "scope": "com.yunzhi.tiyu;com.hypergryph.skland;com.hypergryph.arknights;com.qihoo.zhinao;tv.danmaku.bili",
         },
     },
     "xp-watch": {
@@ -76,20 +75,20 @@
         "pushPath": "/data/local/tmp/",
         "entry": "main.js"
     },
-    // "inject-apk": {
-    //     "inherit": "base",
-    //     "type": "inject-apk",
-    //     "platform": "android-arm64",
-    //     "fridaVersion": "17.5.1",
-    //     "entry": "main.js",
-    //     "injectApk": {
-    //         "sourceApkPath": "E:\\rev-yunyundong\\云运动_3.5.7_kill.apk",
-    //         "injectMode": "NativeAddNeeded",
-    //     },
-    //     "sign": {
-    //         "keystore": "C:\\Users\\MicroBlock\\.android\\debug.keystore",
-    //         "keystorePass": "android",
-    //         "keystoreAlias": "androiddebugkey"
-    //     }
-    // }
+    "inject-apk": {
+        "inherit": "base",
+        "type": "inject-apk",
+        "platform": "android-arm64",
+        "fridaVersion": "17.5.1",
+        "entry": "main.js",
+        "injectApk": {
+            "sourceApkPath": "C:\\Users\\MicroBlock\\Downloads\\BlockGram Desktop\\Bili-v8.65.0-x1.26.6@bb_show.apk",
+            "injectMode": "NativeAddNeeded",
+        },
+        "sign": {
+            "keystore": "C:\\Users\\MicroBlock\\.android\\debug.keystore",
+            "keystorePass": "android",
+            "keystoreAlias": "androiddebugkey"
+        }
+    }
 }

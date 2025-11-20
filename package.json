@@ -1,5 +1,11 @@
 {
   "dependencies": {
-    "@types/frida-gum": "^19.0.1"
+    "@types/frida-gum": "^19.0.1",
+    "frida-compile": "^19.0.4",
+    "frida-java-bridge": "^7.0.10"
+  },
+  "scripts": {
+    "build": "frida-compile main.js -o main_compiled.js",
+    "watch": "frida-compile main.js -o main_compiled.js --watch"
   }
 }

@@ -4,3 +4,4 @@ libfripack-inject.so
 /fripack
 node_modules
 yarn.lock
+main_compiled.js
